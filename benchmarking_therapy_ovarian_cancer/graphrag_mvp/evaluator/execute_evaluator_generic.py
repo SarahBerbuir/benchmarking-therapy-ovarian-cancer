@@ -2,9 +2,10 @@ from benchmarking_therapy_ovarian_cancer.graphrag_mvp.fact_extraction.factschema
 from typing import Callable, Dict, Any
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.knowledge_graph import KG
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.fact_extraction.fact_extractor_llm import extract_single_fact_llm
+from .evaluators import iota_simple_rules
 
 EVAL_DISPATCH: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any] | str]] = {
-    # "iota_simple_rules": iota_simple_rules,
+    "iota_simple_rules": iota_simple_rules,
 }
 
 def execute_evaluator_generic(
