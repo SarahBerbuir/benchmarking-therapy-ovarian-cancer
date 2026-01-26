@@ -2,9 +2,63 @@ from vertexai.generative_models import GenerationConfig, HarmCategory, HarmBlock
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from enum import Enum
+
 load_dotenv()
 
 BASE_DIR = Path(__file__).parent.parent
+
+PROJECT_ROOT = Path(__file__).resolve().parents[0]
+CREDENTIALS_PATH = PROJECT_ROOT / "credentials.json"
+
+class LlmStrategy(Enum):
+    VANILLA = "vanilla"
+    RAG = "rag"
+    LONG_CTX = "long_ctx"
+
+def prefix_for(strategy: LlmStrategy) -> str:
+    return strategy.value
+
+_COL_TEMPLATES = {
+    "output":    "{pfx}_evaluation",
+    "reco":      "{pfx}_empfehlung",
+    "reasoning": "{pfx}_begründung",
+}
+
+class EvaluationMetrics(Enum):
+    COSINE = "cosine"
+    BERT = "bert"
+    BLEU = "bleu"
+    ROUGE = "rouge"
+    LLM_AS_A_JUDGE = "llm_as_a_judge"
+
+
+def cols_for(strategy: LlmStrategy) -> dict[str, str]:
+    """Return dict mit keys: output, reco, reasoning."""
+    pfx = prefix_for(strategy)
+    return {k: v.format(pfx=pfx) for k, v in _COL_TEMPLATES.items()}
+
+def reco_col_for(strategy: LlmStrategy) -> str:
+    return cols_for(strategy)["reco"]
+
+def output_col_for(strategy: LlmStrategy) -> str:
+    return cols_for(strategy)["output"]
+
+def reasoning_col_for(strategy: LlmStrategy) -> str:
+    return cols_for(strategy)["reasoning"]
+
+def metric_col(metric: EvaluationMetrics, strategy: LlmStrategy, suffix: str | None = None) -> str:
+    """
+    metric_col(EvaluationMetrics.COSINE, LlmStrategy.VANILLA) -> 'cos_sim_vanilla'
+    metric_col(EvaluationMetrics.BLEU,   LlmStrategy.VANILLA, '1') -> 'bleu_vanilla1'
+    metric_col(EvaluationMetrics.ROUGE,  LlmStrategy.LONG_CTX, 'L_f') -> 'rouge_long_ctxL_f'
+    """
+    base = f"{metric.value}_{prefix_for(strategy)}"
+    return f"{base}{suffix}" if suffix else base
+
+
+# Column names
+gold_standard_col = "Original Tumorboard-Empfehlung"
 
 # Data paths
 RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "Raw_Deutsch_OV.xlsx"
@@ -16,88 +70,30 @@ gcp_project_id = os.getenv("GCP_PROJECT_ID")
 
 gcp_region = "us-central1"
 
-
+# Model configuration
+# TODO try out more
 LLM_MODEL_NAME = "gemini-2.0-flash"
 EMBEDDING_MODEL_NAME = "pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb"
 
-basic_prompt_template = treatment_prompt_german = """
-## Aufgabe: Erstelle eine präzise Primärtherapie-Empfehlung
 
-Du assistierst Onkolog:innen bei der Auswahl einer geeigneten Primärtherapie für Patienten mit komplexen oder seltenen Krebserkrankungen.
-
-### Deine Aufgabe:
-
-1. Lies sorgfältig die folgenden Patientendaten.
-2. Gib eine konkrete, medizinisch präzise Therapieempfehlung (z.B. in der Form: "LSK mit Adnektomie bds. Ergänzung CT-Thorax ...").
-3. Begründe deine Entscheidung klar auf Basis der Tumorbiologie, Biomarker, Literatur oder klinischer Studien.
-4. Falls relevante Biomarker nicht bestimmt sind, aber laut Literatur sinnvoll wären, weise darauf hin.
-5. Wenn klinische Studien infrage kommen, gib eine konkrete Empfehlung.
-
-### Format:
-
-Bitte gib deine Antwort in folgendem Format zurück:
-
-**Therapieempfehlung:** <eine medizinisch präzise Zeile>
-
-**Begründung:** <klarer Fließtext, warum diese Therapie für diesen Patienten geeignet ist, inkl. Verweise auf Biomarker, Studien oder Tumorbiologie>
-
----
-
-### Patientendaten:
-{patient_info}
-"""
-
-long_context_prompt_template = """
-## Aufgabe: Erstelle eine präzise Primärtherapie-Empfehlung
-
-Du assistierst Onkolog:innen bei der Auswahl einer geeigneten Primärtherapie für Patienten mit komplexen oder seltenen Krebserkrankungen.
-
-### Kontext aus Leitlinie:
-
-Nutze den folgenden Ausschnitt aus der medizinischen Leitlinie als Grundlage für deine Empfehlung. Beziehe dich **ausschließlich** auf diesen Kontext und die Patientendaten – keine Halluzinationen oder Vermutungen!
-
-{context_block}
-
----
-
-### Deine Aufgabe:
-
-1. Lies sorgfältig die Patientendaten und den Leitlinienkontext.
-2. Gib eine konkrete, medizinisch präzise Therapieempfehlung (z.B. in der Form: "LSK mit Adnektomie bds. Ergänzung CT-Thorax ...").
-3. Begründe deine Entscheidung auf Basis der Tumorbiologie, Biomarker, Literatur oder klinischer Studien, **sofern im Kontext enthalten**.
-
-### Format:
-
-**Therapieempfehlung:** <eine medizinisch präzise Zeile>
-
-**Begründung:** <warum diese Therapie auf Basis des Kontexts empfohlen wird>
-
----
-
-### Patientendaten:
-{patient_info}
-"""
-# 4. Wenn keine klare Empfehlung im Kontext gegeben ist, schreibe: "Keine klare Empfehlung laut Kontext gefunden."
-
-gold_standard_col = "Original Tumorbaord-Empfehlung"
-
-# LLM
-llm_output_col = "LLM Evaluation"
-llm_output_col_recommendation = "LLM_Empfehlung"
-llm_output_col_reasoning = "LLM_Begründung"
-llm_cosine_similarity_col = "cos_sim_llm"
-
-# Basic RAG
-rag_output_col = "RAG Evaluation"
-rag_output_col_recommendation = "RAG_Empfehlung"
-rag_output_col_reasoning = "RAG_Begründung"
-rag_cosine_similarity_col = "cos_sim_rag"
-
-# Long context LLM
-long_context_output_col = "Long Context LLM Evaluation"
-long_context_output_col_recommendation = "Long_Context_LLM_Empfehlung"
-long_context_output_col_reasoning = "Long_Context_LLM_Begründung"
-long_context_cosine_similarity_col = "cos_sim_long_context_llm"
+#
+# # LLM
+# llm_output_col = "LLM Evaluation"
+# llm_output_col_recommendation = "LLM_Empfehlung"
+# llm_output_col_reasoning = "LLM_Begründung"
+# llm_cosine_similarity_col = "cos_sim_llm"
+#
+# # Basic RAG
+# rag_output_col = "RAG Evaluation"
+# rag_output_col_recommendation = "RAG_Empfehlung"
+# rag_output_col_reasoning = "RAG_Begründung"
+# rag_cosine_similarity_col = "cos_sim_rag"
+#
+# # Long context LLM
+# long_context_output_col = "Long Context LLM Evaluation"
+# long_context_output_col_recommendation = "Long_Context_LLM_Empfehlung"
+# long_context_output_col_reasoning = "Long_Context_LLM_Begründung"
+# long_context_cosine_similarity_col = "cos_sim_long_context_llm"
 
 generation_config = GenerationConfig(
     temperature=0.4,
