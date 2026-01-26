@@ -2,3 +2,6 @@
 benchmarking_therapy_ovarian_cancer/.env
 data
 benchmarking_therapy_ovarian_cancer/credentials.json
+benchmarking_therapy_ovarian_cancer/graphrag_mvp/credentials_neo4j.json
+benchmarking_therapy_ovarian_cancer/graphrag_mvp/tests/credentials_neo4j.json
+benchmarking_therapy_ovarian_cancer/runs
