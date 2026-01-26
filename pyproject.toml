@@ -21,9 +21,11 @@ dependencies = [
     "langchain-huggingface (>=0.3.0,<0.4.0)",
     "langchain-google-vertexai (>=2.0.27,<3.0.0)",
     "pymupdf (>=1.26.3,<2.0.0)",
+    "bs4 (>=0.0.2,<0.0.3)",
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
