@@ -161,10 +161,11 @@ class KG:
         """
         Steps where all REQUIRES_FACT are satisfied by patient's facts and which are not completed yet.
         Route-Frontier:
+          - reachable from root
           - all REQUIRES_FACT met
           - not COMPLETED
           - not ON_HOLD
-          - missing NEEDS_FACT block if at least one provider (of a needed fact) is evaluator
+          - Scope-gating: missing NEEDS_FACT block if provider are not completed yet
         """
         q = """
             WITH $pid AS pid, $root AS rootName
@@ -172,9 +173,10 @@ class KG:
                 MATCH (root:Step {name : rootName})
                 MATCH (s:Step)
 
-                OPTIONAL MATCH path =(root)-[: NEXT *0..]->(s)
+                OPTIONAL MATCH path =(root)-[: NEXT*0..]->(s)
             WITH p, s, path IS NOT NULL AS reachable, length (path) AS depth 
-                OPTIONAL MATCH (s)-[rq:REQUIRES_FACT]->(fkReq:FactKey)
+            
+            OPTIONAL MATCH (s)-[rq:REQUIRES_FACT]->(fkReq:FactKey)
             WITH p, s, depth, reachable, [ r IN collect(CASE WHEN fkReq IS NULL THEN NULL ELSE {k: fkReq.key, v: rq.value} END)
             WHERE r IS NOT NULL ] AS reqs
 
@@ -183,32 +185,24 @@ class KG:
                 WHERE pfR.value = r.v
                 }) AS requires_ok
 
-            WITH p, s, depth, reachable, requires_ok, EXISTS { MATCH (p)-[:COMPLETED]->(s) } AS is_completed, EXISTS { MATCH (p)-[:ON_HOLD]->(s) } AS is_on_hold
-
-                OPTIONAL MATCH (s)-[:NEEDS_FACT]->(fkNeed:FactKey)
-                OPTIONAL MATCH (prov:Step)-[:PROVIDES_FACT]->(fkNeed)
-            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, fkNeed, collect(DISTINCT prov.kind) AS provKinds
-            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, collect(
-                CASE
-                WHEN fkNeed IS NULL THEN NULL
-                ELSE { need: fkNeed.key, onlyEval: ALL (k IN provKinds WHERE k='Evaluator') }
-                END
-                ) AS needsInfo
-            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, [ni IN needsInfo 
-            WHERE ni IS NOT NULL 
-              AND ni.onlyEval] AS evalOnlyNeeds
-
-            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, ANY (ni IN evalOnlyNeeds WHERE NOT EXISTS {
-                MATCH (p)-[:HAS_FACT]->(pfN:PatientFact)-[:OF_KEY]->(:FactKey {key : ni.need})
-                WHERE pfN.value IS NOT NULL AND pfN.value <> 'unknown'
-                }) AS gating_blocks
-
+            WITH p, s, depth, reachable, requires_ok, 
+                EXISTS { MATCH (p)-[:COMPLETED]->(s) } AS is_completed, 
+                EXISTS { MATCH (p)-[:ON_HOLD]->(s) } AS is_on_hold
+            
             WHERE reachable
               AND requires_ok
               AND NOT is_completed
               AND NOT is_on_hold
-              AND NOT gating_blocks
-
+              
+              AND NOT EXISTS {
+                MATCH (s)-[:NEEDS_FACT]->(fkNeed:FactKey)
+                MATCH (prov:Step)-[:PROVIDES_FACT]->(fkNeed)
+                WITH p, fkNeed, collect(DISTINCT prov) AS provs
+                WHERE size(provs) > 0
+                  AND NONE(pr IN provs WHERE EXISTS { MATCH (p)-[:COMPLETED]->(pr) })
+                RETURN 1
+              }
+            
             WITH s, depth, CASE s.kind
                 WHEN 'Evaluator' THEN 4
                 WHEN 'Diagnostic' THEN 3
@@ -222,3 +216,29 @@ class KG:
         """
         rows = self.run_list(q, pid=pid, root=root_name)
         return [(row["name"], row["kind"], int(row["depth"])) for row in rows]
+
+#      Old evalutor only logic
+#      - Evaluator-only-gating: missing NEEDS_FACT block if at least one provider (of a needed fact) is evaluator
+#      OPTIONAL MATCH (s)-[:NEEDS_FACT]->(fkNeed:FactKey)
+#                 OPTIONAL MATCH (prov:Step)-[:PROVIDES_FACT]->(fkNeed)
+#             WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, fkNeed, collect(DISTINCT prov.kind) AS provKinds
+#             WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, collect(
+#                 CASE
+#                 WHEN fkNeed IS NULL THEN NULL
+#                 ELSE { need: fkNeed.key, onlyEval: ALL (k IN provKinds WHERE k='Evaluator') }
+#                 END
+#                 ) AS needsInfo
+#             WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, [ni IN needsInfo
+#             WHERE ni IS NOT NULL
+#               AND ni.onlyEval] AS evalOnlyNeeds
+#
+#             WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, ANY (ni IN evalOnlyNeeds WHERE NOT EXISTS {
+#                 MATCH (p)-[:HAS_FACT]->(pfN:PatientFact)-[:OF_KEY]->(:FactKey {key : ni.need})
+#                 WHERE pfN.value IS NOT NULL AND pfN.value <> 'unknown'
+#                 }) AS gating_blocks
+#
+#             WHERE reachable
+#               AND requires_ok
+#               AND NOT is_completed
+#               AND NOT is_on_hold
+#               AND NOT gating_blocks
