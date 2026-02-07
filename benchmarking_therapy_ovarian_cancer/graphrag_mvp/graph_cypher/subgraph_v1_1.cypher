@@ -6,6 +6,7 @@ WITH {
   iota: "IOTA-Auswertung (Simple Rules)",
   cystClassification: "Zystenklassifikation (BD-Klassifikation)",
   ct: "CT Thorax/Abdomen",
+  figoBucketer: "FIGO Bucketer",
   opDecider: "OP-Entscheider",
   followUp: "Verlaufskontrolle",
   cystectomy: "Zystenausschälung",
@@ -19,6 +20,7 @@ MERGE (stepIota:Step:Evaluator {name:names.iota})                 ON CREATE SET 
 MERGE (stepCystClassification:Step:Evaluator {name:names.cystClassification})
   ON CREATE SET stepCystClassification.kind = "Evaluator", stepCystClassification.logic = "bd_classification"
 MERGE (stepCT:Step:Diagnostic {name:names.ct})                    ON CREATE SET stepCT.kind = "Diagnostic"
+MERGE (stepFIGOBucketer:Step:Evaluator {name:names.figoBucketer}) ON CREATE SET stepFIGOBucketer.kind = "Evaluator", stepFIGOBucketer.logic = "get_figo_bucket"
 MERGE (stepOpDecider:Step:Evaluator {name:names.opDecider})       ON CREATE SET stepOpDecider.kind = "Evaluator", stepOpDecider.logic = "get_op_plan"
 MERGE (stepFollowUp:Step:Info {name:names.followUp})              ON CREATE SET stepFollowUp.kind = "Info"
 MERGE (stepCystectomy:Step:Therapy {name:names.cystectomy})       ON CREATE SET stepCystectomy.kind = "Therapy"
@@ -26,7 +28,7 @@ MERGE (stepAdnexectomy:Step:Therapy {name:names.adnexectomy})     ON CREATE SET 
 
 // evidence factkeys
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer
 
 MERGE (fkSono:FactKey {key:"ev_sonography_present"})
 MERGE (stepSonography)-[:EVIDENCE_HINTS]->(fkSono)
@@ -46,12 +48,14 @@ MERGE (stepAdnexectomy)-[:EVIDENCE_HINTS]->(fkAdnexectomyEv)
 
 // flow
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer
 
 MERGE (stepIntake)-[:NEXT]->(stepSonography)
 MERGE (stepSonography)-[:NEXT]->(stepIota)
 MERGE (stepIota)-[:NEXT]->(stepCystClassification)
 MERGE (stepIota)-[:NEXT]->(stepCT)
+
+MERGE (stepCT)-[:NEXT]->(stepFIGOBucketer)
 
 MERGE (stepCystClassification)-[:NEXT]->(stepOpDecider)
 
@@ -62,7 +66,7 @@ MERGE (stepOpDecider)-[:NEXT]->(stepAdnexectomy)
 
 // provides_fact (sonography → B/M)
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, [
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer, [
   "B1_unilokulaer","B2_solide_lt7mm","B3_schallschatten",
   "B4_glatt_multilok_lt10cm","B5_keine_doppler_flow",
   "M1_unreg_solid","M2_ascites","M3_ge4_papillae",
@@ -74,20 +78,33 @@ MERGE (stepSonography)-[:PROVIDES_FACT]->(bmKey)
 
 // provides_fact (iota → iota_res, cyst → cyst_bd)
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer
 MERGE (fkIotaRes:FactKey {key:"iota_res"})
 MERGE (stepIota)-[:PROVIDES_FACT]->(fkIotaRes)
 
+//left side from IOTA Auswertung
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, fkIotaRes
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer, fkIotaRes
 MERGE (fkCystBd:FactKey {key:"cyst_bd"})
 MERGE (stepCystClassification)-[:PROVIDES_FACT]->(fkCystBd)
 MERGE (stepOpDecider)-[:NEEDS_FACT]->(fkCystBd)
 
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
-     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, fkIotaRes, fkCystBd
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer, fkIotaRes, fkCystBd
 MERGE (fkOpPlan:FactKey {key:"op_plan"})
 MERGE (stepOpDecider)-[:PROVIDES_FACT]->(fkOpPlan)
+
+//right side from IOTA Auswertung
+WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer, fkIotaRes, fkCystBd, fkOpPlan
+MERGE (fkFigoClinical:FactKey {key:"figo_clinical"})
+MERGE (stepCT)-[:PROVIDES_FACT]->(fkFigoClinical)
+MERGE (stepFIGOBucketer)-[:NEEDS_FACT]->(fkFigoClinical)
+
+WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
+     stepOpDecider, stepFollowUp, stepCystectomy, stepAdnexectomy, stepFIGOBucketer, fkIotaRes, fkCystBd, fkOpPlan
+MERGE (fkFigoBucket:FactKey {key:"figo_bucket"})
+MERGE (stepFIGOBucketer)-[:PROVIDES_FACT]->(fkFigoBucket)
 
 // needs_fact (iota needs B/M)
 WITH stepIntake, stepSonography, stepIota, stepCystClassification, stepCT,
