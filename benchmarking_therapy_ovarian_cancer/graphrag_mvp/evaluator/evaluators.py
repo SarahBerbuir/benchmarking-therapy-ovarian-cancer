@@ -36,3 +36,11 @@ def iota_simple_rules(facts: dict) -> str:
 
     print(f"Count benign: {b}, Count malignant: {m}, Iota: {iota_res}")
     return iota_res
+
+def bd_classification(facts: dict) -> str:
+    # TODO
+    return "BD1"
+
+def get_op_plan(facts: dict) -> str:
+    # bd = facts.get("cyst_bd")
+    return "no_op"

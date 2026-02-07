@@ -91,11 +91,42 @@ FACT_SCHEMA = {
         "sections": ["Bildgebung", "CT", "Befunde"],
         "producer": ["llm"],
     },
+    "ev_followup_present": {
+        "role": "evidence", "type": "bool2",
+        "title": "Verlaufskontrolle vorhanden",
+        "definition": "Hinweise, dass eine Verlaufskontrolle/Follow-up dokumentiert ist (z. B. Kontrolltermin, Kontrollbefund).",
+        "sections": [],
+        "producer": ["llm"],
+    },
+    "ev_cystectomy_done": {
+        "role": "evidence", "type": "bool2",
+        "title": "Zystenausschälung durchgeführt",
+        "definition": "Hinweise, dass eine Zystenausschälung bereits durchgeführt wurde.",
+        "sections": [],
+        "producer": ["llm"],
+    },
+    "ev_adnexectomy_done": {
+        "role": "evidence", "type": "bool2",
+        "title": "Adnektomie durchgeführt",
+        "definition": "Hinweise, dass eine Adnektomie bereits durchgeführt wurde.",
+        "sections": [],
+        "producer": ["llm"],
+    },
     # --- Evaluator-Output  ---
     "iota_res": {
         "role": "output", "type": "enum",
         "allowed": ["benigne_wahrscheinlich","maligne_wahrscheinlich","nicht_klassifizierbar","unknown"],
         "producer": ["iota_simple_rules"],
+    },
+    "cyst_bd": {
+        "role": "output", "type": "enum",
+        "allowed": ["BD1","BD2","BD3","BD4", "unknown"],
+        "producer": ["bd_classification"],
+    },
+    "op_plan": {
+        "role": "output", "type": "enum",
+        "allowed": ["no_op","Zystenausschälung","Adnektomie","unknown"],
+        "producer": ["get_op_plan"],
     },
 }
 

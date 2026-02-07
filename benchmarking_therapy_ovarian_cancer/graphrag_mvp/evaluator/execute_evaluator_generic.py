@@ -2,10 +2,13 @@ from benchmarking_therapy_ovarian_cancer.graphrag_mvp.fact_extraction.factschema
 from typing import Callable, Dict, Any
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.knowledge_graph import KG
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.fact_extraction.fact_extractor_llm import extract_single_fact_llm
-from .evaluators import iota_simple_rules
+from .evaluators import iota_simple_rules, bd_classification, get_op_plan
 
 EVAL_DISPATCH: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any] | str]] = {
     "iota_simple_rules": iota_simple_rules,
+    "bd_classification": bd_classification,
+    "get_op_plan": get_op_plan
+
 }
 
 def execute_evaluator_generic(
@@ -60,5 +63,7 @@ def execute_evaluator_generic(
         outputs[out_key] = out_val
 
     kg.mark_completed(pid, step_name)
+    facts_after = kg.get_patient_facts(pid)
     print(f"[eval] {step_name}: outputs -> {outputs}")
+    print(f"[eval] patient facts snapshot -> {facts_after}")
     return outputs

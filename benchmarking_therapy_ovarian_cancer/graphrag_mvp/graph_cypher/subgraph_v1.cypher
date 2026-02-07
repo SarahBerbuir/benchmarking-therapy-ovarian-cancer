@@ -1,10 +1,4 @@
-// constraints
-CREATE CONSTRAINT step_name IF NOT EXISTS
-FOR (s:Step) REQUIRE s.name IS UNIQUE;
-
-CREATE CONSTRAINT fact_key IF NOT EXISTS
-FOR (f:FactKey) REQUIRE f.key IS UNIQUE;
-
+// Until Zystenklassifikation & CT
 // names
 WITH {
   intake: "Vorsorge/Symptome",
@@ -49,11 +43,12 @@ UNWIND bmKeys AS k
 MERGE (bmKey:FactKey {key:k})
 MERGE (stepSonography)-[:PROVIDES_FACT]->(bmKey)
 
-// provides_fact (iota → iota_res; cyst → cyst_bd)
+// provides_fact (iota → iota_res, cyst → cyst_bd)
 WITH stepIota, stepCystClassification, stepCT
 MERGE (fkIotaRes:FactKey {key:"iota_res"})
 MERGE (stepIota)-[:PROVIDES_FACT]->(fkIotaRes)
 
+WITH stepIota, stepCystClassification, stepCT, fkIotaRes
 MERGE (fkCystBd:FactKey {key:"cyst_bd"})
 MERGE (stepCystClassification)-[:PROVIDES_FACT]->(fkCystBd)
 

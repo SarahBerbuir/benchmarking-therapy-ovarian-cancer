@@ -4,12 +4,11 @@ from .knowledge_graph import KG
 from .evidence_pass import run_evidence_pass
 from ..llm_vertex import init_vertexai_llm, get_json_llm_fn
 
+ROOT_STEP = "Vorsorge/Symptome"
 
 # TODO
-def pick_next(frontier: list[tuple[str, str]]) -> Optional[tuple[str, str]]:
-    """Priority for now Evaluator"""
-    evals = [t for t in frontier if t[1] == "Evaluator"]
-    return evals[0] if evals else (frontier[0] if frontier else None)
+def pick_next(frontier: list[tuple[str, str, int]]):
+    return frontier[0] if frontier else None
 
 def infer_tick(
     kg: KG,
@@ -18,7 +17,8 @@ def infer_tick(
     llm_json,
 ) -> Dict[str, Any]:
     """One iteration"""
-    frontier = kg.frontier_steps(pid) # [(name, kind)]
+    frontier =kg.frontier_steps(pid, root_name=ROOT_STEP) # [(name, kind)]
+    print("[tick] frontier:", frontier)
     nxt = pick_next(frontier)
     if not nxt:
         return {
@@ -26,7 +26,7 @@ def infer_tick(
             "reason": "no_frontier"
         }
 
-    step_name, step_kind = nxt
+    step_name, step_kind, _depth = nxt
 
     if step_kind == "Evaluator":
         outputs = execute_evaluator_generic(kg, pid, step_name, llm_json, patient_text)
@@ -68,20 +68,28 @@ def start_inference(kg: KG, pid: str, patient_text: str):
 
     # TODO
     # On hold for steps which are on path root to complete nodes
-    kg.recompute_on_hold(pid, root_name="Vorsorge/Symptome")
+    kg.recompute_on_hold(pid, root_name=ROOT_STEP)
 
     completed = [row["name"] for row in kg.run_list(
         "MATCH (p:Patient {pid:$pid})-[:COMPLETED]->(s:Step) RETURN s.name AS name",
         pid=pid
     )]
-    frontier = kg.frontier_steps(pid)  # [(name, kind), …]
+    frontier = kg.frontier_steps(pid, root_name=ROOT_STEP)
 
     print(f"[start] completed={completed}")
     print(f"[start] frontier={frontier}")
 
-    history = run_until_stable(kg, pid, patient_text, llm_json, max_steps=3)
+    history = run_until_stable(kg, pid, patient_text, llm_json, max_steps=10)
     print(f"[start] run_until_stable: {len(history)} ticks")
 
+    completed = [row["name"] for row in kg.run_list(
+        "MATCH (p:Patient {pid:$pid})-[:COMPLETED]->(s:Step) RETURN s.name AS name",
+        pid=pid
+    )]
+    frontier = kg.frontier_steps(pid, root_name=ROOT_STEP)
+
+    print(f"[end] completed={completed}")
+    print(f"[end] frontier={frontier}")
     # TODO what to do, where is patient now
     return {
         "completed": completed,
