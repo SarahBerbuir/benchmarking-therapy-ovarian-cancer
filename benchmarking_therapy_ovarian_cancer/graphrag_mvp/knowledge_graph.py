@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from pathlib import Path
 from typing import Any, Dict
 from neo4j import GraphDatabase, Driver
 
@@ -109,51 +111,6 @@ class KG:
             MERGE (p)-[:ON_HOLD]->(s)
         """, pid=pid, root=root_name)
 
-    def frontier_steps(self, pid: str) -> list[tuple[str, str]]:
-        """
-        Steps where all REQUIRES_FACT are satisfied by patient's facts and which are not completed yet.
-        Route-Frontier:
-          - all REQUIRES_FACT met
-          - not COMPLETED
-          - not ON_HOLD
-          - missing NEEDS_FACT block if at least one provider (of a needed fact) is evaluator
-        """
-        # language=Cypher
-        q = """
-      WITH $pid AS pid
-MATCH (p:Patient {pid: pid})
-MATCH (s:Step)
-          
-OPTIONAL MATCH (s)-[rq:REQUIRES_FACT]->(fk:FactKey)
-WITH p, s,
-     collect(CASE WHEN fk IS NULL THEN null ELSE {k: fk.key, v: rq.value} END) AS reqsRaw
-WITH p, s, [r IN reqsRaw WHERE r IS NOT NULL] AS reqs
-          
-WHERE
-  ALL (r IN reqs WHERE EXISTS {
-    MATCH (p)-[:HAS_FACT]->(pf:PatientFact)-[:OF_KEY]->(:FactKey {key: r.k})
-    WHERE pf.value = r.v
-  })
-  AND NOT EXISTS { MATCH (p)-[:COMPLETED]->(s) }
-  AND NOT EXISTS { MATCH (p)-[:ON_HOLD]->(s) }
-    
-AND (
-  NOT EXISTS {
-    MATCH (s)-[:NEEDS_FACT]->(fkNeed:FactKey)
-    OPTIONAL MATCH (prov:Step)-[:PROVIDES_FACT]->(fkNeed)
-    WITH p, s, fkNeed, collect(DISTINCT prov.kind) AS provKindsPerKey
-    WHERE "Evaluator" IN provKindsPerKey
-    OPTIONAL MATCH (p)-[:HAS_FACT]->(pfN:PatientFact)-[:OF_KEY]->(fkNeed)
-    WHERE pfN IS NULL OR pfN.value IS NULL OR pfN.value = "unknown"
-    RETURN 1
-  }
-)
-RETURN s.name AS name, s.kind AS kind;
-        """
-
-        rows = self.run_list(q, pid=pid)
-        return [(row["name"], row["kind"]) for row in rows]
-
     def run_script(self, script: str) -> None:
         statements = [s.strip() for s in script.split(";") if s.strip()]
         with self.driver.session(database=self.database) as s:
@@ -182,3 +139,86 @@ RETURN s.name AS name, s.kind AS kind;
             RETURN s.name AS name
         """, pid=pid)
         return [row["name"] for row in rows]
+
+    def rebuild_from_cypher(self, cypher_file: str | Path) -> None:
+        """
+        MVP-Reinit:
+          1) Delete all nodes/rels
+          2) Constraints/Indices
+          3) Create KG with Cypher-Script
+        """
+        path = Path(cypher_file)
+        if not path.exists():
+            raise FileNotFoundError(f"Cypher file not found: {path}")
+
+        self.delete_all()
+        self.ensure_constraints()
+
+        script = path.read_text(encoding="utf-8")
+        self.run_script(script)
+
+    def frontier_steps(self, pid: str, root_name: str = "Vorsorge/Symptome") -> list[tuple[str, str, int]]:
+        """
+        Steps where all REQUIRES_FACT are satisfied by patient's facts and which are not completed yet.
+        Route-Frontier:
+          - all REQUIRES_FACT met
+          - not COMPLETED
+          - not ON_HOLD
+          - missing NEEDS_FACT block if at least one provider (of a needed fact) is evaluator
+        """
+        q = """
+            WITH $pid AS pid, $root AS rootName
+                MATCH (p:Patient {pid: pid})
+                MATCH (root:Step {name : rootName})
+                MATCH (s:Step)
+
+                OPTIONAL MATCH path =(root)-[: NEXT *0..]->(s)
+            WITH p, s, path IS NOT NULL AS reachable, length (path) AS depth 
+                OPTIONAL MATCH (s)-[rq:REQUIRES_FACT]->(fkReq:FactKey)
+            WITH p, s, depth, reachable, [ r IN collect(CASE WHEN fkReq IS NULL THEN NULL ELSE {k: fkReq.key, v: rq.value} END)
+            WHERE r IS NOT NULL ] AS reqs
+
+            WITH p, s, depth, reachable, ALL (r IN reqs WHERE EXISTS {
+                MATCH (p)-[:HAS_FACT]->(pfR:PatientFact)-[:OF_KEY]->(:FactKey {key :r.k})
+                WHERE pfR.value = r.v
+                }) AS requires_ok
+
+            WITH p, s, depth, reachable, requires_ok, EXISTS { MATCH (p)-[:COMPLETED]->(s) } AS is_completed, EXISTS { MATCH (p)-[:ON_HOLD]->(s) } AS is_on_hold
+
+                OPTIONAL MATCH (s)-[:NEEDS_FACT]->(fkNeed:FactKey)
+                OPTIONAL MATCH (prov:Step)-[:PROVIDES_FACT]->(fkNeed)
+            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, fkNeed, collect(DISTINCT prov.kind) AS provKinds
+            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, collect(
+                CASE
+                WHEN fkNeed IS NULL THEN NULL
+                ELSE { need: fkNeed.key, onlyEval: ALL (k IN provKinds WHERE k='Evaluator') }
+                END
+                ) AS needsInfo
+            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, [ni IN needsInfo 
+            WHERE ni IS NOT NULL 
+              AND ni.onlyEval] AS evalOnlyNeeds
+
+            WITH p, s, depth, reachable, requires_ok, is_completed, is_on_hold, ANY (ni IN evalOnlyNeeds WHERE NOT EXISTS {
+                MATCH (p)-[:HAS_FACT]->(pfN:PatientFact)-[:OF_KEY]->(:FactKey {key : ni.need})
+                WHERE pfN.value IS NOT NULL AND pfN.value <> 'unknown'
+                }) AS gating_blocks
+
+            WHERE reachable
+              AND requires_ok
+              AND NOT is_completed
+              AND NOT is_on_hold
+              AND NOT gating_blocks
+
+            WITH s, depth, CASE s.kind
+                WHEN 'Evaluator' THEN 4
+                WHEN 'Diagnostic' THEN 3
+                WHEN 'Therapy' THEN 2
+                WHEN 'Info' THEN 1
+                ELSE 0
+            END 
+            AS prio
+        RETURN s.name AS name, s.kind AS kind, depth
+        ORDER BY depth ASC, prio DESC, name ASC 
+        """
+        rows = self.run_list(q, pid=pid, root=root_name)
+        return [(row["name"], row["kind"], int(row["depth"])) for row in rows]

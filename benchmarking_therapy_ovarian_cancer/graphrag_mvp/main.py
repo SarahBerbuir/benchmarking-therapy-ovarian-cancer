@@ -11,8 +11,11 @@ logging.basicConfig(
 
 
 kg = load_neo4j()
+kg.rebuild_from_cypher("graph_cypher/subgraph_v1_1.cypher")
+
+
 pid = "PDEMO1"
-patient_text = "Sono: Aszites im Abdomen; Kein CT" # . CT Abdomen liegt vor" # unilokuläre Zyste.
+patient_text = "Sono: unilokuläre Zyste, keine soliden Anteile <7mm, Schallschatten vorhanden, glatte multilokuläre Struktur <10 cm, kein starker Dopplerfluss. Kein Aszites. Kein CT vorhanden."#Kein Sono und kein CT"#"Sono: Aszites im Abdomen; CT" # . CT Abdomen liegt vor" # unilokuläre Zyste.
 
 res = start_inference(kg, pid, patient_text)
 print(res)
