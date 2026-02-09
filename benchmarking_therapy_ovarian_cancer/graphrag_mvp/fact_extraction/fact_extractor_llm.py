@@ -11,7 +11,8 @@ def extract_single_fact_llm(
     if not spec:
         raise KeyError(f"Unknown FactKey: {key}")
 
-    prompt = build_fact_prompt(key, patient_info)
+
+    prompt = build_fact_prompt(key, patient_info, spec)
     schema = schema_for_key(key)
     data = llm_json(prompt, schema)
 

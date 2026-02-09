@@ -14,8 +14,7 @@ def _allowed_values_line(spec: dict) -> str:
         return " | ".join(f'"{v}"' for v in spec.get("allowed", []))
     return 'number | "unknown"'
 
-def build_fact_prompt(key: str, patient_info: str) -> str:
-    spec = FACT_SCHEMA[key]
+def build_fact_prompt(key: str, patient_info: str, spec) -> str:
 
     details = []
     if spec.get("title"):
