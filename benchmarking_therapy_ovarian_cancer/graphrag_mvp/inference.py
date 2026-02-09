@@ -15,45 +15,48 @@ def infer_tick(
     pid: str,
     patient_text: str,
     llm_json,
+    frontier
 ) -> Dict[str, Any]:
     """One iteration"""
-    frontier =kg.frontier_steps(pid, root_name=ROOT_STEP) # [(name, kind)]
-    print("[tick] frontier:", frontier)
-    nxt = pick_next(frontier)
-    if not nxt:
-        return {
-            "did_something": False,
-            "reason": "no_frontier"
-        }
+    # print("[tick] frontier:", frontier)
+    evals = [t for t in frontier if t[1] == "Evaluator"]
+    if not evals:
+        return {"did_something": False, "reason": "no_evaluator_in_frontier"}
 
-    step_name, step_kind, _depth = nxt
+    step_name, step_kind, _depth = evals[0]  # Frontier ist schon sortiert
+    outputs = execute_evaluator_generic(kg, pid, step_name, llm_json, patient_text)
+    kg.recompute_on_hold(pid, root_name=ROOT_STEP)
+    return {"did_something": True, "action": "evaluate", "step": step_name, "outputs": outputs}
 
-    if step_kind == "Evaluator":
-        outputs = execute_evaluator_generic(kg, pid, step_name, llm_json, patient_text)
-        kg.recompute_on_hold(pid, root_name="Vorsorge/Symptome")
-        return {
-            "did_something": True,
-            "action": "evaluate",
-            "step": step_name,
-            "outputs": outputs,
-        }
 
-    expected = kg.step_provides(step_name)
-    return {
-        "did_something": False,
-        "action": "await_diagnostic_or_evidence",
-        "step": step_name,
-        "expected_outputs": expected,
-    }
-
-def run_until_stable(kg, pid, patient_text, llm_json, max_steps=3):
+def run_until_stable(kg, pid, patient_text, llm_json, max_steps=10):
     history = []
     for _ in range(max_steps):
-        r = infer_tick(kg, pid, patient_text, llm_json)
+        frontier = kg.frontier_steps(pid, root_name=ROOT_STEP)
+        print("[loop] frontier:", frontier)
+
+        # STOP 1: nothing reachable
+        if not frontier:
+            history.append({"did_something": False, "reason": "no_frontier"})
+            break
+
+        # STOP 2: no evaluators left -> awaiting diagnostics/evidence
+        has_eval = any(kind == "Evaluator" for (_name, kind, _depth) in frontier)
+        if not has_eval:
+            history.append({
+                "did_something": False,
+                "reason": "only_non_evaluators_left",
+                "action": "await_diagnostic_or_evidence",
+                "outputs": []
+            })
+            break
+
+        r = infer_tick(kg, pid, patient_text, llm_json, frontier)
         history.append(r)
+
         if not r.get("did_something"):
-            #TODO
-            break # stop, no progress
+            break
+
     return history
 
 def start_inference(kg: KG, pid: str, patient_text: str):
