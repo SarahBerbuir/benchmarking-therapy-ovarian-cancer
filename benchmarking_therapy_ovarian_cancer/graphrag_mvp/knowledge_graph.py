@@ -82,6 +82,21 @@ class KG:
         """
         self.run_write(query, pid=pid, name=step_name)
 
+    def mark_performed(self, pid: str, step_name: str, reason: str = "evidence") -> None:
+        q = """
+        MATCH (p:Patient {pid:$pid}), (s:Step {name:$name})
+        MERGE (p)-[:PERFORMED {ts:datetime()}]->(s)
+        """
+        self.run_write(q, pid=pid, name=step_name, reason=reason)
+
+    def step_provides_meta(self, step_name: str) -> list[dict]:
+        q = """
+        MATCH (:Step {name:$s})-[r:PROVIDES_FACT]->(fk:FactKey)
+        RETURN fk.key AS k, coalesce(r.hard,false) AS hard
+        ORDER BY fk.key
+        """
+        return [{"key": row["k"], "hard": bool(row["hard"])} for row in self.run_list(q, s=step_name)]
+
     def is_completed(self, pid: str, step_name: str) -> bool:
         # check completion flag
         q = """
@@ -124,6 +139,14 @@ class KG:
     def step_needs(self, step_name: str) -> list[str]:
         q = "MATCH (:Step {name:$s})-[:NEEDS_FACT]->(fk:FactKey) RETURN fk.key AS k"
         return [row["k"] for row in self.run_list(q, s=step_name)]
+
+    def step_requires(self, step_name: str) -> list[tuple[str, object]]:
+        q = """
+        MATCH (s:Step {name:$name})-[r:REQUIRES_FACT]->(fk:FactKey)
+        RETURN fk.key AS key, r.value AS val
+        """
+        rows = self.run_list(q, name=step_name)
+        return [(row["key"], row["val"]) for row in rows]
 
     def step_provides(self, step_name: str) -> list[str]:
         q = "MATCH (:Step {name:$s})-[:PROVIDES_FACT]->(fk:FactKey) RETURN fk.key AS k"
