@@ -4,7 +4,16 @@ from benchmarking_therapy_ovarian_cancer.graphrag_mvp.knowledge_graph import KG
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.fact_extraction.fact_extractor_llm import extract_single_fact_llm
 from .evaluators import iota_simple_rules, bd_classification, set_op_plan, set_figo_bucket, set_debulking_possible, \
     set_hrd_brca_status, set_planning_neoadjuvant_therapy, set_neoadjuvant_next_step, set_next_step_therapy, \
-    set_repeat_debulking_operabel_ass, set_planning_adjuvant_therapy, set_maintenance_therapy, set_adjuvant_next_step
+    set_repeat_debulking_operabel_ass, set_planning_adjuvant_therapy, set_maintenance_therapy, set_adjuvant_next_step, \
+    resolve_path_stage_grade_lap, resolve_path_stage_grade_lsk
+
+EVAL_NEEDS_LLM = {
+    "bd_classification",
+    "set_debulking_possible",
+    "set_repeat_debulking_operabel_ass",
+    "resolve_path_stage_grade_lap",
+    "resolve_path_stage_grade_lsk",
+}
 
 EVAL_DISPATCH: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any] | str]] = {
     "iota_simple_rules": iota_simple_rules,
@@ -20,6 +29,8 @@ EVAL_DISPATCH: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any] | str]] = {
     "set_repeat_debulking_operabel_ass": set_repeat_debulking_operabel_ass,
     "set_planning_adjuvant_therapy": set_planning_adjuvant_therapy,
     "set_maintenance_therapy": set_maintenance_therapy,
+    "resolve_path_stage_grade_lap": resolve_path_stage_grade_lap,
+    "resolve_path_stage_grade_lsk": resolve_path_stage_grade_lsk
 }
 
 def execute_evaluator_generic(
@@ -47,7 +58,6 @@ def execute_evaluator_generic(
         if have != req_val:
             print(f"[eval] {step_name}: REQUIRES not met -> {req_key} need=={req_val!r} have=={have!r}")
 
-    facts_now = kg.get_patient_facts(pid)
 
     provide_keys = kg.step_provides(step_name)
     if not provide_keys:
@@ -58,10 +68,10 @@ def execute_evaluator_generic(
         result: Dict[str, Any] = {k: True for k in provide_keys}
     else:
         print(f"[eval] {step_name}: Logic '{logic}'")
-        if logic in ["bd_classification", "set_debulking_possible", "set_repeat_debulking_operabel_ass"]:
-            result = EVAL_DISPATCH[logic](facts_now, patient_text, llm_json)
+        if logic in EVAL_NEEDS_LLM:
+            result = EVAL_DISPATCH[logic](facts, patient_text, llm_json)
         else:
-            result = EVAL_DISPATCH[logic](facts_now)
+            result = EVAL_DISPATCH[logic](facts)
         if not isinstance(result, dict): # if node has more then one provide fact relation and function doesn't return dict -> error
             if len(provide_keys) != 1:
                 raise RuntimeError(

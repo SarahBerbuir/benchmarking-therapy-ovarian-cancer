@@ -69,7 +69,6 @@ def run_evidence_pass(
 
                 if hard and _is_unknown(val):
                     no_unknown_hard = False
-            no_unknown_hard = _apply_step_specific_policy(step, values, no_unknown_hard)
 
         else:
             no_unknown_hard = False
