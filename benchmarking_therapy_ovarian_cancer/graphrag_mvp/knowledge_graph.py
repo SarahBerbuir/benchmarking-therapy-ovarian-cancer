@@ -92,7 +92,7 @@ class KG:
     def step_provides_meta(self, step_name: str) -> list[dict]:
         q = """
         MATCH (:Step {name:$s})-[r:PROVIDES_FACT]->(fk:FactKey)
-        RETURN fk.key AS k, coalesce(r.hard,false) AS hard
+        RETURN fk.key AS k, coalesce(properties(r)['hard'],false) AS hard
         ORDER BY fk.key
         """
         return [{"key": row["k"], "hard": bool(row["hard"])} for row in self.run_list(q, s=step_name)]
@@ -126,11 +126,11 @@ class KG:
             MERGE (p)-[:ON_HOLD]->(s)
         """, pid=pid, root=root_name)
 
-    def run_script(self, script: str) -> None:
+    def run_script(self, script: str, **params) -> None:
         statements = [s.strip() for s in script.split(";") if s.strip()]
         with self.driver.session(database=self.database) as s:
             for st in statements:
-                s.run(st)
+                s.run(st, **params).consume()
 
     def delete_all(self) -> None:
         self.run_write("MATCH (n) DETACH DELETE n")
@@ -163,7 +163,37 @@ class KG:
         """, pid=pid)
         return [row["name"] for row in rows]
 
-    def rebuild_from_cypher(self, cypher_file: str | Path) -> None:
+    def pick_anchor(self, pid: str, root_name: str = "Vorsorge/Symptome") -> dict | None:
+        """
+        Anchor = best COMPLETED step by lexicographic rank:
+          (max_phase_on_path, depth_from_root).
+        max_phase_on_path is computed along the (shortest) root->step NEXT path.
+        """
+        q = """
+        MATCH (p:Patient {pid:$pid})
+        MATCH (root:Step {name:$root})
+        MATCH (p)-[:COMPLETED]->(s:Step)
+        
+        MATCH sp = shortestPath((root)-[:NEXT*0..]->(s))
+        WITH p, s, sp, length(sp) AS depth,
+             [n IN nodes(sp)
+               WHERE EXISTS { MATCH (p)-[:COMPLETED]->(n) }
+               | coalesce(n.phase, 0)
+             ] AS phases
+        
+        WITH s, depth,
+             reduce(m = 0, x IN phases | CASE WHEN x > m THEN x ELSE m END) AS phase_on_path
+        
+        RETURN s.name AS name, s.kind AS kind, depth, phase_on_path AS phase
+        ORDER BY phase DESC, depth DESC, name ASC
+        LIMIT 1
+        """
+        row = self._run_one(q, pid=pid, root=root_name)
+        if not row:
+            return None
+        return {"name": row["name"], "kind": row["kind"], "depth": int(row["depth"]), "phase": int(row["phase"])}
+
+    def rebuild_from_cypher(self, cypher_file: str | Path, **params) -> None:
         """
         MVP-Reinit:
           1) Delete all nodes/rels
@@ -178,7 +208,7 @@ class KG:
         self.ensure_constraints()
 
         script = path.read_text(encoding="utf-8")
-        self.run_script(script)
+        self.run_script(script, **params)
 
     def frontier_steps(self, pid: str, root_name: str = "Vorsorge/Symptome") -> list[tuple[str, str, int]]:
         """

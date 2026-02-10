@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 from benchmarking_therapy_ovarian_cancer.graphrag_mvp.evaluator.execute_evaluator_generic import execute_evaluator_generic
 from .knowledge_graph import KG
 from .evidence_pass import run_evidence_pass
+from .verbalization import verbalize_subgraph_from_anchor
 from ..llm_vertex import init_vertexai_llm, get_json_llm_fn
 
 ROOT_STEP = "Vorsorge/Symptome"
@@ -29,7 +30,7 @@ def infer_tick(
     return {"did_something": True, "action": "evaluate", "step": step_name, "outputs": outputs}
 
 
-def run_until_stable(kg, pid, patient_text, llm_json, max_steps=10):
+def run_until_stable(kg, pid, patient_text, llm_json, max_steps=100):
     history = []
     for _ in range(max_steps):
         frontier = kg.frontier_steps(pid, root_name=ROOT_STEP)
@@ -69,7 +70,7 @@ def start_inference(kg: KG, pid: str, patient_text: str):
     # Collect evidence flags from patient and set steps which have evidence on COMPLETED
     run_evidence_pass(kg, pid, patient_text, llm_json)
 
-    # TODO
+    # TODO Delete function
     # On hold for steps which are on path root to complete nodes
     kg.recompute_on_hold(pid, root_name=ROOT_STEP)
 
@@ -82,7 +83,7 @@ def start_inference(kg: KG, pid: str, patient_text: str):
     print(f"[start] completed={completed}")
     print(f"[start] frontier={frontier}")
 
-    history = run_until_stable(kg, pid, patient_text, llm_json, max_steps=10)
+    history = run_until_stable(kg, pid, patient_text, llm_json)
     print(f"[start] run_until_stable: {len(history)} ticks")
 
     completed = [row["name"] for row in kg.run_list(
@@ -90,10 +91,16 @@ def start_inference(kg: KG, pid: str, patient_text: str):
         pid=pid
     )]
     frontier = kg.frontier_steps(pid, root_name=ROOT_STEP)
+    anchor = kg.pick_anchor(pid, root_name=ROOT_STEP)
 
+    print(f"[end] anchor={anchor}")
     print(f"[end] completed={completed}")
     print(f"[end] frontier={frontier}")
     # TODO what to do, where is patient now
+
+    anchor = kg.pick_anchor(pid, root_name=ROOT_STEP)
+    verbal = verbalize_subgraph_from_anchor(kg, pid, anchor=anchor)
+    print("\n[verbalization]\n" + verbal)
     return {
         "completed": completed,
         "frontier": frontier,
