@@ -1,78 +1,3 @@
-:param names => {
-  intake: "Vorsorge/Symptome",
-  sonography: "Gynäkologische Untersuchung & Sonographie",
-  iota: "IOTA-Auswertung (Simple Rules)",
-  cystClassification: "Zystenklassifikation (BD-Klassifikation)",
-  ct: "CT Thorax/Abdomen",
-  figoBucketer: "FIGO Bucketer",
-  debulkingAss: "Debulking Assessment",
-  opDecider: "OP-Entscheider",
-  followUp: "Verlaufskontrolle",
-  cystectomy: "Zystenausschälung",
-  adnexectomy: "Adnektomie",
-  resectabilityEval: "Beurteilung Resektabilität im Tumorboard",
-  laparotomy: "Laparotomie, SS", // Changes need to be also done in evidence pass
-  laparoscopy: "Laparoskopie oder Minilaparotomie", // Changes need to be also done in evidence pass
-  interdTb: "Interdisziplinäres Tumorboard",
-
-  geneticCounselingGermlineBrca: "Humangenetische Beratung (gBRCA)",
-  tumorHRDTesting: "HRD Testung (sBRCA & sHRD)",
-  hrcBrcaResolver: "HRD/BRCA Resolver",
-
-  neoadjuvantTherapyMapping: "Neoadjuvante Therapie Mapping",
-  neoadjuvantTherapy: "Neoadjuvante Therapie",
-  nextStepMappingNeoAdj: "Next Step Mapping Neoadjuvant",
-  interimRestagingCycle3: "Reevaluation nach 3 Zyklen, CT Thorax Abdomen, CA125, Operabilität Assessment",
-  chemoProtocolSwitchAndCompletion: "Wechsel Therapieprotokoll & Komplementierung Chemotherapie (3x)",
-  optimalDebulkingAndChemoCompletion: "Optimales Debulking & Komplementierung Chemotherapie (3x)",
-  repeatDebulkingAssessment: "Wiederholung Debulking Assessment",
-  therapyReevaluation: "Therapie Reevaluation",
-
-  adjuvantTherapyMapping: "Adjuvante Therapie Mapping",
-  adjuvantTherapy: "Adjuvante Therapie",
-  nextStepMappingAdj: "Next Step Mapping Adjuvant",
-
-  parallelJoin: "Parallel Join",
-
-  maintenanceTherapyMapping: "Erhaltungs Therapie Mapping",
-  maintenanceTherapy: "Erhaltungs Therapie",
-
-  followUpCare: "Nachsorge",
-
-  routeFollowUpOp: "Route Verlaufskontrolle (op_plan)",
-  routeFollowUpCystectomy: "Route Verlaufskontrolle (Histologie Zystenausschälung)",
-  routeAdnexectomyOpPlan: "Route Adnektomie (op_plan Adnexectomy)",
-  routeFollowUpAdnex: "Route Verlaufskontrolle (Histologie Adnektomie)",
-
-  routeFollowUpLaparotomy: "Route Verlaufskontrolle (Laparotomie)",
-  routeFollowUpLaparoscopy: "Route Verlaufskontrolle (Laparoskopie)",
-
-  routeAdnexectomyCFigo: "Route Adnektomie (cFIGO early)",
-  routeDebulkingAssFIGOBucket: "Route Debulking Assessment (FIGO Bucket)",
-  routeDebulkingAssCystectomy: "Route Debulking Assessment (Zystenausschälung)",
-  routeDebulkingAssAdnexectomy: "Route Debulking Assessment (Adnektomie)",
-
-  routeInterdTbLaparotomy: "Route Interdisziplinäres Tumorboard (Laparotomie)",
-  routeInterdTbLaparoscopy: "Route Interdisziplinäres Tumorboard (Laparoskopie)",
-
-  routeBrcaHrdResolverHRDTesting: "Route HRD/BRCA Resolver (HRD Testung)",
-  routeBrcaHrdResolverGermline: "Route HRD/BRCA Resolver (Humangenetische Beratung gBRCA1/2)",
-
-  routeOptimalDebulkingComplRestaging: "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Interim Restaging)",
-  routeOptimalDebulkingComplRepeatDebAss: "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Repeated Debulking Assessment)",
-
-  routeNeoadjuvantNextStep: "Route Next Step (Neoadjuvant)",
-  routeSystemDoneNeoadj: "Route Systemtherapie Done (Neoaduvant)",
-
-  routeAdjuvantNextStep: "Route Next Step (Adjuvant)",
-  routeSystemDoneAdj: "Route Systemtherapie Done (Adjuvant)",
-
-  routeFollowUpCareSystTh: "Route Nachsorge (Systemtherapie)",
-  routeFollowUpCareMaintTh: "Route Nachsorge (Erhaltungstherapie)"
-
-
-};
-
 WITH $names AS names
 CALL (names) {
  MERGE (stepIntake:Step:Info {name:names.intake})                  ON CREATE SET stepIntake.kind = "Info"
@@ -109,6 +34,8 @@ CALL (names) {
   MERGE (stepFollowUpResectability:Step:Info {name:names.resectabilityEval})  ON CREATE SET stepFollowUpResectability.kind = "Info"
 
   MERGE (stepLaparotomy:Step:Therapy {name:names.laparotomy})       ON CREATE SET stepLaparotomy.kind = "Therapy"
+  MERGE (stepLaparotomyPathology:Step:Evaluator {name:names.laparotomyPathology})
+    ON CREATE SET stepLaparotomyPathology.kind = "Evaluator", stepLaparotomyPathology.logic = "resolve_path_stage_grade_lap"
   MERGE (stepRouteFollowUpLaparotomy:Step:Evaluator:Routing {name:names.routeFollowUpLaparotomy})
     ON CREATE SET stepRouteFollowUpLaparotomy.kind="Evaluator", stepRouteFollowUpLaparotomy.logic="set_route_flag"
   MERGE (stepRouteInterdTbLaparotomy:Step:Evaluator:Routing {name:names.routeInterdTbLaparotomy})
@@ -116,6 +43,8 @@ CALL (names) {
 
 
   MERGE (stepLaparoscopy:Step:Therapy {name:names.laparoscopy})       ON CREATE SET stepLaparoscopy.kind = "Therapy"
+    MERGE (stepLaparoscopyPathology:Step:Evaluator {name:names.laparoscopyPathology})
+    ON CREATE SET stepLaparoscopyPathology.kind = "Evaluator", stepLaparoscopyPathology.logic = "resolve_path_stage_grade_lsk"
   MERGE (stepRouteFollowUpLaparoscopy:Step:Evaluator:Routing {name:names.routeFollowUpLaparoscopy})
     ON CREATE SET stepRouteFollowUpLaparoscopy.kind="Evaluator", stepRouteFollowUpLaparoscopy.logic="set_route_flag"
   MERGE (stepRouteInterdTbLaparoscopy:Step:Evaluator:Routing {name:names.routeInterdTbLaparoscopy})
@@ -183,5 +112,34 @@ MERGE (stepFollowUpCare:Step:Info {name:names.followUpCare})  ON CREATE SET step
 
   RETURN 1 AS ok
 }
-WITH ok
-RETURN 'done' AS status;
+WITH ok, names
+WITH [
+  // 1: op_primary_benign
+  names.cystectomy, names.adnexectomy
+] AS benign, [
+  // 2: op_primary_maligne
+  names.laparotomy, names.laparoscopy
+] AS malignant, [
+  // 3: systematic_therapy
+  names.neoadjuvantTherapy, names.adjuvantTherapy
+] AS systh, [
+  // 4: interim_restaging
+  names.interimRestagingCycle3
+] AS restaging, [
+  // 5: optimales_debulking_neoadjuvant
+  names.optimalDebulkingAndChemoCompletion
+] AS optdeb, [
+  // 5: optimales_debulking_neoadjuvant
+  names.parallelJoin
+] AS paralleljoin, [
+  // 6: erhaltungs_therapy
+  names.maintenanceTherapy
+] AS maint
+
+FOREACH (n IN benign    | MERGE (s:Step {name:n}) SET s.phase = 1)
+FOREACH (n IN malignant | MERGE (s:Step {name:n}) SET s.phase = 2)
+FOREACH (n IN systh     | MERGE (s:Step {name:n}) SET s.phase = 3)
+FOREACH (n IN restaging | MERGE (s:Step {name:n}) SET s.phase = 4)
+FOREACH (n IN optdeb    | MERGE (s:Step {name:n}) SET s.phase = 5)
+FOREACH (n IN paralleljoin    | MERGE (s:Step {name:n}) SET s.phase = 6)
+FOREACH (n IN maint     | MERGE (s:Step {name:n}) SET s.phase = 7);

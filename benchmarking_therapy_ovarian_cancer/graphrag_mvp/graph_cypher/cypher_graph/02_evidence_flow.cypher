@@ -1,5 +1,6 @@
 WITH $names AS names
-CALL (names) {
+CALL {
+  WITH names
   MATCH (son:Step {name:names.sonography})
   MATCH (ct:Step  {name:names.ct})
   MATCH (cys:Step {name:names.cystectomy})
@@ -42,7 +43,7 @@ UNWIND [
 ] AS pair
 WITH pair[0] AS key, pair[1] AS step
 MERGE (fk:FactKey {key:key})
-MERGE (step)-[:EVIDENCE_HINTS]->(fk);
+MERGE (step)-[:EVIDENCE_HINTS]->(fk)
 
 WITH $names AS names
 UNWIND [
@@ -90,13 +91,15 @@ UNWIND [
   [names.laparotomy, names.routeFollowUpLaparotomy],
   [names.routeFollowUpLaparotomy, names.followUp],
 
-  [names.laparotomy, names.routeInterdTbLaparotomy],
+  [names.laparotomy, names.laparotomyPathology],
+  [names.laparotomyPathology, names.routeInterdTbLaparotomy],
   [names.routeInterdTbLaparotomy, names.interdTb],
 
   [names.laparoscopy, names.routeFollowUpLaparoscopy],
   [names.routeFollowUpLaparoscopy, names.followUp],
 
-  [names.laparoscopy, names.routeInterdTbLaparoscopy],
+  [names.laparoscopy, names.laparoscopyPathology],
+  [names.laparoscopyPathology, names.routeInterdTbLaparoscopy],
   [names.routeInterdTbLaparoscopy, names.interdTb],
 
   [names.interdTb, names.geneticCounselingGermlineBrca],
@@ -153,10 +156,6 @@ UNWIND [
   [names.maintenanceTherapyMapping, names.maintenanceTherapy],
   [names.maintenanceTherapy, names.routeFollowUpCareMaintTh],
   [names.routeFollowUpCareMaintTh, names.followUpCare]
-
-
-
-
 ] AS e
 MATCH (a:Step {name:e[0]}), (b:Step {name:e[1]})
 MERGE (a)-[:NEXT]->(b)

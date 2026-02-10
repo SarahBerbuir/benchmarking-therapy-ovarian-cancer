@@ -28,9 +28,11 @@ CALL (names){
 
   // Laparotomie/Laparoskopie & TB-Routen
   MATCH (stepLaparotomy:Step {name:names.laparotomy})
+  MATCH (stepLaparotomyPathology:Step {name:names.laparotomyPathology})
   MATCH (stepRouteFollowUpLaparotomy:Step {name:names.routeFollowUpLaparotomy})
   MATCH (stepRouteInterdTbLaparotomy:Step {name:names.routeInterdTbLaparotomy})
   MATCH (stepLaparoscopy:Step {name:names.laparoscopy})
+  MATCH (stepLaparoscopyPathology:Step {name:names.laparoscopyPathology})
   MATCH (stepRouteFollowUpLaparoscopy:Step {name:names.routeFollowUpLaparoscopy})
   MATCH (stepRouteInterdTbLaparoscopy:Step {name:names.routeInterdTbLaparoscopy})
   MATCH (stepInterdTumorBoard:Step {name:names.interdTb})
@@ -97,8 +99,10 @@ CALL (names){
     routeDebulkingAssAdnexectomy:   stepRouteDebulkingAssAdnexectomy,
     followUpResectability:          stepFollowUpResectability,
     laparotomy:                     stepLaparotomy,
+    laparotomyPathology:            stepLaparotomyPathology,
     routeInterdTbLaparotomy:        stepRouteInterdTbLaparotomy,
     laparoscopy:                    stepLaparoscopy,
+    laparoscopyPathology:           stepLaparoscopyPathology,
     routeInterdTbLaparoscopy:       stepRouteInterdTbLaparoscopy,
     interdTumorBoard:               stepInterdTumorBoard,
     geneticCounselingGermlineBRCA:  stepGeneticCounselingGermlineBRCA,
@@ -245,6 +249,7 @@ WITH s, fkFigoClinical, s.ct AS stepCT, s.figo AS stepFIGO
 MERGE (stepCT)-[:PROVIDES_FACT {hard:true}]->(fkFigoClinical)
 MERGE (stepFIGO)-[:NEEDS_FACT]->(fkFigoClinical)
 
+
 WITH s
 MERGE (fkFigoBucket:FactKey {key:"figo_bucket"})
 WITH s, fkFigoBucket, s.figo AS stepFIGO, s.routeAdnexectomyCFigo as stepRouteAdnexectomyCFigo, s.routeDebulkingAssFIGOBucket AS stepRouteDebulkingAssFIGOBucket
@@ -269,31 +274,47 @@ MERGE (stepFollowUpResectability)-[:REQUIRES_FACT {value:"unknown"}]->(fkDebPoss
 MERGE (stepLaparotomy)-[:REQUIRES_FACT {value:true}]->(fkDebPoss)
 MERGE (stepLaparoscopy)-[:REQUIRES_FACT {value:false}]->(fkDebPoss)
 
+
 WITH s
-MERGE (fkLaparotomyGrade:FactKey {key:"grade_laparotomy"})
-MERGE (fkLaparotomyFigoPath:FactKey {key:"figo_path_laparotomy"})
 MERGE (fkLaparotomyHistology:FactKey {key:"histology_laparotomy"})
-WITH s, fkLaparotomyGrade, fkLaparotomyFigoPath, fkLaparotomyHistology, s.laparotomy AS stepLaparotomy, s.routeFollowUpLaparotomy AS stepRouteFollowUpLaparotomy
-MERGE (stepLaparotomy)-[:PROVIDES_FACT]->(fkLaparotomyGrade)
-MERGE (stepLaparotomy)-[:PROVIDES_FACT]->(fkLaparotomyFigoPath)
+WITH s, fkLaparotomyHistology, s.laparotomy AS stepLaparotomy, s.routeFollowUpLaparotomy AS stepRouteFollowUpLaparotomy, s.laparotomyPathology AS stepLaparotomyPathology
 MERGE (stepLaparotomy)-[:PROVIDES_FACT {hard:true}]->(fkLaparotomyHistology)
 MERGE (stepRouteFollowUpLaparotomy)-[:REQUIRES_FACT {value:"benigne"}]->(fkLaparotomyHistology)
+MERGE (stepLaparotomyPathology)-[:REQUIRES_FACT {value:"maligne"}]->(fkLaparotomyHistology)
 
+WITH s, fkLaparotomyHistology
+MERGE (fkLaparotomyGrade:FactKey {key:"grade_laparotomy"})
+MERGE (fkLaparotomyFigoPath:FactKey {key:"figo_path_laparotomy"})
+WITH s, fkLaparotomyGrade, fkLaparotomyFigoPath, fkLaparotomyHistology, s.adjuvantTherapyMapping AS stepAdjuvantTherapyMapping, s.laparotomyPathology AS stepLaparotomyPathology, s.routeInterdTbLaparotomy AS stepRouteInterdTbLaparotomy, s.adjuvantNextStepMapping AS stepAdjuvantNextStepMapping
+MERGE (stepLaparotomyPathology)-[:PROVIDES_FACT]->(fkLaparotomyGrade)
+MERGE (stepLaparotomyPathology)-[:PROVIDES_FACT]->(fkLaparotomyFigoPath)
+MERGE (stepAdjuvantTherapyMapping)-[:NEEDS_FACT]->(fkLaparotomyFigoPath)
+MERGE (stepAdjuvantTherapyMapping)-[:NEEDS_FACT]->(fkLaparotomyGrade)
+MERGE (stepRouteInterdTbLaparotomy)-[:NEEDS_FACT]->(fkLaparotomyFigoPath)
+MERGE (stepRouteInterdTbLaparotomy)-[:NEEDS_FACT]->(fkLaparotomyGrade)
+MERGE (stepAdjuvantNextStepMapping)-[:NEEDS_FACT]->(fkLaparotomyFigoPath)
+MERGE (stepAdjuvantNextStepMapping)-[:NEEDS_FACT]->(fkLaparotomyGrade)
 
 WITH s
-MATCH (fkLapEv:FactKey {key:"ev_laparotomy_done"})
-WITH s, fkLapEv, s.routeInterdTbLaparotomy as stepRouteInterdTbLaparotomy
-MERGE (stepRouteInterdTbLaparotomy)-[:REQUIRES_FACT {value:true}]->(fkLapEv)
-
-WITH s
-MERGE (fkLaparoscopyGrade:FactKey {key:"grade_laparoscopy"})
-MERGE (fkLaparoscopyFigoPath:FactKey {key:"figo_path_laparoscopy"})
 MERGE (fkLaparoscopyHistology:FactKey {key:"histology_laparoscopy"})
-WITH s, fkLaparoscopyGrade, fkLaparoscopyFigoPath, fkLaparoscopyHistology, s.laparoscopy AS stepLaparoscopy, s.routeFollowUpLaparoscopy AS stepRouteFollowUpLaparoscopy
-MERGE (stepLaparoscopy)-[:PROVIDES_FACT]->(fkLaparoscopyGrade)
-MERGE (stepLaparoscopy)-[:PROVIDES_FACT]->(fkLaparoscopyFigoPath)
+WITH s, fkLaparoscopyHistology, s.laparoscopy AS stepLaparoscopy, s.routeFollowUpLaparoscopy AS stepRouteFollowUpLaparoscopy, s.laparoscopyPathology AS stepLaparoscopyPathology
 MERGE (stepLaparoscopy)-[:PROVIDES_FACT {hard:true}]->(fkLaparoscopyHistology)
 MERGE (stepRouteFollowUpLaparoscopy)-[:REQUIRES_FACT {value:"benigne"}]->(fkLaparoscopyHistology)
+MERGE (stepLaparoscopyPathology)-[:REQUIRES_FACT {value:"maligne"}]->(fkLaparoscopyHistology)
+
+WITH s, fkLaparoscopyHistology
+MERGE (fkLaparoscopyGrade:FactKey {key:"grade_laparoscopy"})
+MERGE (fkLaparoscopyFigoPath:FactKey {key:"figo_path_laparoscopy"})
+WITH s, fkLaparoscopyGrade, fkLaparoscopyFigoPath, fkLaparoscopyHistology, s.neoadjuvantTherapyMapping AS stepNeodjuvantTherapyMapping, s.laparoscopyPathology AS stepLaparoscopyPathology, s.routeInterdTbLaparoscopy AS stepRouteInterdTbLaparoscopy, s.neoadjuvantNextStepMapping AS stepNeoadjuvantNextStepMapping
+MERGE (stepLaparoscopyPathology)-[:PROVIDES_FACT]->(fkLaparoscopyGrade)
+MERGE (stepLaparoscopyPathology)-[:PROVIDES_FACT]->(fkLaparoscopyFigoPath)
+MERGE (stepNeodjuvantTherapyMapping)-[:NEEDS_FACT]->(fkLaparoscopyFigoPath)
+MERGE (stepNeodjuvantTherapyMapping)-[:NEEDS_FACT]->(fkLaparoscopyGrade)
+MERGE (stepRouteInterdTbLaparoscopy)-[:NEEDS_FACT]->(fkLaparoscopyFigoPath)
+MERGE (stepRouteInterdTbLaparoscopy)-[:NEEDS_FACT]->(fkLaparoscopyGrade)
+MERGE (stepNeoadjuvantNextStepMapping)-[:NEEDS_FACT]->(fkLaparoscopyFigoPath)
+MERGE (stepNeoadjuvantNextStepMapping)-[:NEEDS_FACT]->(fkLaparoscopyGrade)
+
 
 WITH s
 MERGE (fkRouteInterdTb:FactKey {key:"route_interdisciplinary_tumorboard"})
@@ -304,20 +325,28 @@ MERGE (stepInterdTumorBoard)-[:REQUIRES_FACT {value:true}]->(fkRouteInterdTb)
 
 WITH s
 MERGE (fkRouteLaparotomy:FactKey {key:"route_laparotomy"})
-WITH s, fkRouteLaparotomy, s.routeInterdTbLaparotomy AS stepRouteInterdTbLaparotomy
+WITH s, fkRouteLaparotomy, s.routeInterdTbLaparotomy AS stepRouteInterdTbLaparotomy, s.adjuvantTherapy AS stepAdjuvantTherapy, s.adjuvantTherapyMapping AS stepAdjuvantTherapyMapping
 MERGE (stepRouteInterdTbLaparotomy)-[:PROVIDES_FACT]->(fkRouteLaparotomy)
+MERGE (stepAdjuvantTherapyMapping)-[:REQUIRES_FACT {value:true}]->(fkRouteLaparotomy)
+MERGE (stepAdjuvantTherapy)-[:REQUIRES_FACT {value:true}]->(fkRouteLaparotomy)
 
 WITH s
 MERGE (fkRouteLaparoscopy:FactKey {key:"route_laparoscopy"})
-WITH s, fkRouteLaparoscopy, s.routeInterdTbLaparoscopy AS stepRouteInterdTbLaparoscopy
+WITH s, fkRouteLaparoscopy, s.routeInterdTbLaparoscopy AS stepRouteInterdTbLaparoscopy, s.neoadjuvantTherapy AS stepNeoadjuvantTherapy, s.neoadjuvantTherapyMapping AS stepNeoadjuvantTherapyMapping
 MERGE (stepRouteInterdTbLaparoscopy)-[:PROVIDES_FACT]->(fkRouteLaparoscopy)
+MERGE (stepNeoadjuvantTherapy)-[:REQUIRES_FACT {value:true}]->(fkRouteLaparoscopy)
+MERGE (stepNeoadjuvantTherapyMapping)-[:REQUIRES_FACT {value:true}]->(fkRouteLaparoscopy)
 
 
 WITH s
 MERGE (fkParallelStarting:FactKey {key:"parallel_starting"})
-WITH s, fkParallelStarting, s.interdTumorBoard AS stepInterdTumorBoard, s.geneticCounselingGermlineBRCA AS stepGeneticCounselingGermlineBRCA, s.brcaHrdResolver AS stepBrcaHrdResolver
+WITH s, fkParallelStarting, s.interdTumorBoard AS stepInterdTumorBoard, s.geneticCounselingGermlineBRCA AS stepGeneticCounselingGermlineBRCA, s.brcaHrdResolver AS stepBrcaHrdResolver, s.adjuvantTherapyMapping AS stepAdjuvantTherapyMapping,  s.adjuvantTherapy AS stepAdjuvantTherapy, s.neoadjuvantTherapyMapping AS stepNeoadjuvantTherapyMapping,  s.neoadjuvantTherapy AS stepNeoadjuvantTherapy
 MERGE (stepInterdTumorBoard)-[:PROVIDES_FACT]->(fkParallelStarting)
 MERGE (stepGeneticCounselingGermlineBRCA)-[:REQUIRES_FACT {value:true}]->(fkParallelStarting)
+MERGE (stepAdjuvantTherapyMapping)-[:REQUIRES_FACT {value:true}]->(fkParallelStarting)
+MERGE (stepAdjuvantTherapy)-[:REQUIRES_FACT {value:true}]->(fkParallelStarting)
+MERGE (stepNeoadjuvantTherapyMapping)-[:REQUIRES_FACT {value:true}]->(fkParallelStarting)
+MERGE (stepNeoadjuvantTherapy)-[:REQUIRES_FACT {value:true}]->(fkParallelStarting)
 
 // Humangenetische Beratung
 WITH s
@@ -432,13 +461,14 @@ MERGE (stepRouteSystemDoneNeoadj)-[:REQUIRES_FACT {value:true}]->(fkOptDebChemoC
 // Zusammenführung Systemtherapie
 WITH s
 MERGE (fkNextStepSystemTherapy:FactKey {key:"next_step_system_therapy"})
-WITH s, fkNextStepSystemTherapy, s.routeAdjuvantNextStep AS stepRouteAdjuvantNextStep, s.routeNeoadjuvantNextStep AS stepRouteNeoadjuvantNextStep, s.parallelJoin AS stepParallelJoin, s.routeFollowUpCareSystTh AS stepRouteFollowUpCareSystTh, s.maintenanceTherapyMapping AS stepMaintenanceTherapyMapping, s.routeSystemDoneAdj AS stepRouteSystemDoneAdj
+WITH s, fkNextStepSystemTherapy, s.routeAdjuvantNextStep AS stepRouteAdjuvantNextStep, s.routeNeoadjuvantNextStep AS stepRouteNeoadjuvantNextStep, s.parallelJoin AS stepParallelJoin, s.routeFollowUpCareSystTh AS stepRouteFollowUpCareSystTh, s.maintenanceTherapyMapping AS stepMaintenanceTherapyMapping, s.maintenanceTherapy AS stepMaintenanceTherapy, s.routeSystemDoneAdj AS stepRouteSystemDoneAdj
 MERGE (stepRouteAdjuvantNextStep)-[:PROVIDES_FACT]->(fkNextStepSystemTherapy)
 MERGE (stepRouteNeoadjuvantNextStep)-[:PROVIDES_FACT]->(fkNextStepSystemTherapy)
 MERGE (stepRouteSystemDoneAdj)-[:NEEDS_FACT]->(fkNextStepSystemTherapy)
 MERGE (stepParallelJoin)-[:NEEDS_FACT]->(fkNextStepSystemTherapy)
 MERGE (stepRouteFollowUpCareSystTh)-[:REQUIRES_FACT {value:"Nachsorge"}]->(fkNextStepSystemTherapy)
 MERGE (stepMaintenanceTherapyMapping)-[:REQUIRES_FACT {value:"Erhaltungstherapie"}]->(fkNextStepSystemTherapy)
+MERGE (stepMaintenanceTherapy)-[:REQUIRES_FACT {value:"Erhaltungstherapie"}]->(fkNextStepSystemTherapy)
 
 
 
@@ -451,7 +481,7 @@ MERGE (stepParallelJoin)-[:REQUIRES_FACT {value:true}]->(fkSystemTherapyDone)
 
 
 WITH s
-MERGE (fkParallelDone:FactKey {key:"paralleldone"})
+MERGE (fkParallelDone:FactKey {key:"parallel_done"})
 WITH s, fkParallelDone, s.parallelJoin AS stepParallelJoin, s.routeFollowUpCareSystTh AS stepRouteFollowUpCareSystTh, s.maintenanceTherapyMapping AS stepMaintenanceTherapyMapping, s.maintenanceTherapy AS stepMaintenanceTherapy
 MERGE (stepParallelJoin)-[:PROVIDES_FACT]->(fkParallelDone)
 MERGE (stepMaintenanceTherapyMapping)-[:REQUIRES_FACT {value:true}]->(fkParallelDone)
@@ -476,4 +506,8 @@ WITH s
 MERGE (fkStrategyMaintenance:FactKey {key:"strategy_maintenance"})
 WITH s, fkStrategyMaintenance, s.maintenanceTherapy AS stepMaintenanceTherapy, s.routeFollowUpCareMaintTh AS stepRouteFollowUpCareMaintTh
 MERGE (stepMaintenanceTherapy)-[:PROVIDES_FACT {hard:true}]->(fkStrategyMaintenance)
-MERGE (stepRouteFollowUpCareMaintTh)-[:REQUIRES_FACT {value:true}]->(fkStrategyMaintenance)
+
+WITH s
+MATCH (fkMaintThEv:FactKey {key:"ev_maintenance_therapy_done"})
+WITH s, fkMaintThEv, s.routeFollowUpCareMaintTh AS stepRouteFollowUpCareMaintTh
+MERGE (stepRouteFollowUpCareMaintTh)-[:REQUIRES_FACT {value:true}]->(fkMaintThEv)
