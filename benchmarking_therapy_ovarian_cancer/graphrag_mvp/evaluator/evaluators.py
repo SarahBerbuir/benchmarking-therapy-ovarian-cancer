@@ -118,6 +118,32 @@ def set_debulking_possible(facts: Dict[str, Any], patient_info:str, llm_json: Ca
     print(f"[evaluator]: Debulking possible: {debulking_possible}")
     return {"debulking_possible": debulking_possible}
 
+def resolve_path_stage_grade_lsk(facts: Dict[str, Any], patient_info:str, llm_json: Callable[[str, dict], dict]) -> dict[
+    str, object]:
+    """
+    Determines pathology and staging for laparoscopy
+    """
+    key = "grade_laparoscopy"
+    grade_laparoscopy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
+    key = "figo_path_laparoscopy"
+    figo_path_laparoscopy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
+    print(f"[evaluator]: grade_laparoscopy: {grade_laparoscopy}, figo_path_laparoscopy: {figo_path_laparoscopy}")
+    return {"grade_laparoscopy": grade_laparoscopy, "figo_path_laparoscopy": figo_path_laparoscopy}
+
+def resolve_path_stage_grade_lap(facts: Dict[str, Any], patient_info:str, llm_json: Callable[[str, dict], dict]) -> dict[
+    str, object]:
+    """
+    Determines pathology and staging for laparotomy
+    """
+    key = "grade_laparotomy"
+    grade_laparotomy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
+    key = "figo_path_laparotomy"
+    figo_path_laparotomy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
+    print(f"[evaluator]: grade_laparotomy: {grade_laparotomy}, figo_path_laparotomy: {figo_path_laparotomy}")
+    return {"grade_laparotomy": grade_laparotomy, "figo_path_laparotomy": figo_path_laparotomy}
+
+
+
 def set_hrd_brca_status(facts: Dict[str, Any]) -> Dict[str, Any]:
     """
     Resolves BRCA/HRD status from germline and tumor testing.
@@ -150,10 +176,20 @@ def get_systematic_therapy_strategy_and_step(facts, type_surgery):
     cycle_amount = "3x" if type_surgery == "laparoscopy" else "6x"
 
     grade = facts.get(f"grade_{type_surgery}")
-    figo_clinical = facts.get("figo_clinical").upper().replace(" ", "")
+
+    # FIGO clinical is not completely necessary
+    figo_clinical = facts.get("figo_clinical")
+    if figo_clinical is None:
+        figo_clinical = None
+    else:
+        figo_clinical = str(figo_clinical).upper().replace(" ", "")
+
     figo_path = facts.get(f"figo_path_{type_surgery}").upper().replace(" ", "")
 
-    figo = get_higher_figo(figo_clinical = figo_clinical, figo_path = figo_path)
+    if figo_clinical is None:
+        figo = figo_path
+    else:
+        figo = get_higher_figo(figo_clinical = figo_clinical, figo_path = figo_path)
     c_group = [s for s in FIGO_I if "C" in s]
     if figo == "IA" and grade == "low":
         return "op_only", "Nachsorge"
@@ -180,7 +216,6 @@ def set_planning_adjuvant_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
     """
 
     plan_strategy, plan_next = get_systematic_therapy_strategy_and_step(facts=facts, type_surgery="laparotomy")
-    plan_strategy += "_6x"
     print(f"[evaluator] plan_strategy_adjuvant: {plan_strategy}, plan_next_step_adjuvant: {plan_next}")
     return {
         "plan_strategy_adjuvant": plan_strategy,
@@ -195,7 +230,6 @@ def set_planning_neoadjuvant_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
     plan_next_step_neoadjuvant: 'Nachsorge' | 'Erhaltungstherapie'
     """
     plan_strategy, plan_next = get_systematic_therapy_strategy_and_step(facts=facts, type_surgery="laparoscopy")
-    plan_strategy += "_3x"
     print(f"[evaluator] plan_strategy_neoadjuvant: {plan_strategy}, plan_next_step_neoadjuvant: {plan_next}")
     return {
         "plan_strategy_neoadjuvant": plan_strategy,
