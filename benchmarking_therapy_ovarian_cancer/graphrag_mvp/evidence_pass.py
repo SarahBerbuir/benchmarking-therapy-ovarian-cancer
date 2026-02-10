@@ -11,24 +11,7 @@ def _is_unknown(v: Any) -> bool:
         return True
     return False
 
-def _apply_step_specific_policy(step: str, values: Dict[str, Any], ok_so_far: bool) -> bool:
-    """
-    Conditional-hard logic. Explicit for MVP
-    """
-    if not ok_so_far:
-        return False
-    if step == "Laparotomie, SS":
-        hist = values.get("histology_laparotomy", "unknown")
-        if hist == "maligne":
-            if _is_unknown(values.get("grade_laparotomy")) or _is_unknown(values.get("figo_path_laparotomy")):
-                return False
 
-    if step == "Laparoskopie oder Minilaparotomie":
-        hist = values.get("histology_laparoscopy", "unknown")
-        if hist == "maligne":
-            if _is_unknown(values.get("grade_laparoscopy")) or _is_unknown(values.get("figo_path_laparoscopy")):
-                return False
-    return True
 
 def run_evidence_pass(
     kg: KG,
