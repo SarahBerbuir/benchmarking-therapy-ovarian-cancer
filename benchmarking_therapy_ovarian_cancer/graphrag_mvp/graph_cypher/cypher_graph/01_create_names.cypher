@@ -64,7 +64,7 @@ CALL (names) {
   MERGE (stepBrcaHrdResolver:Step:Evaluator {name:names.hrcBrcaResolver})
     ON CREATE SET stepBrcaHrdResolver.kind="Evaluator", stepBrcaHrdResolver.logic="set_hrd_brca_status"
 
-  MERGE (stepParallelJoin:Step:Evaluator {name:names.parallelJoin})
+  MERGE (stepParallelJoin:Step:Evaluator:Routing {name:names.parallelJoin})
     ON CREATE SET stepParallelJoin.kind="Evaluator", stepParallelJoin.logic="set_route_flag"
 
   MERGE (stepNeoadjuvantTherapyMapping:Step:Evaluator {name:names.neoadjuvantTherapyMapping})
