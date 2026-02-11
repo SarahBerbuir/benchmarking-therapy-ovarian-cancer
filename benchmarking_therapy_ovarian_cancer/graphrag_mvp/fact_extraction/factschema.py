@@ -1,10 +1,10 @@
 from typing import Any, Sequence
 
-
-FIGO_I = ["I", "IA", "IB", "IC1", "IC2", "IC3"]
-FIGO_II = ["II", "IIA", "IIB", "IIC"]
-FIGO_III = ["III", "IIIA", "IIIA1", "IIIA2", "IIIB", "IIIC"]
-FIGO_IV = ["IV", "IVA", "IVB"]
+# TODO I, II und so weg
+FIGO_I = ["IA", "IB", "IC1", "IC2", "IC3"]
+FIGO_II = ["IIA", "IIB", "IIC"]
+FIGO_III = ["IIIA", "IIIA1", "IIIA2", "IIIB", "IIIC"]
+FIGO_IV = ["IVA", "IVB"]
 FIGO_STAGES: Sequence[str] = FIGO_I + FIGO_II + FIGO_III + FIGO_IV
 
 FACT_SCHEMA = {
@@ -124,6 +124,14 @@ FACT_SCHEMA = {
         "definition": "Maximaldurchmesser der Läsion in Zentimetern (Bildgebung/OP). Bei mehreren Maßangaben den größten Einzeldurchmesser verwenden. Wenn in mm dann in cm umrechnen. Wenn nicht berichtet: -1.",
         "pos_examples": ["Größe 8,5 cm", "Durchmesser ca. 6 cm", "ca. 8-9cm", "20x50 mm"],
         "producer": ["llm"],
+    },
+    "cyst_bd": {
+        "role": "output", "type": "enum",
+        "allowed": ["BD1", "BD2", "BD3", "BD4", "unknown"],
+        "definition": (
+            "" # TODO
+        ),
+        "producer": ["bd_classification"],
     },
     "figo_clinical": {
         "role": "input", "type": "enum",
@@ -259,26 +267,26 @@ FACT_SCHEMA = {
         "role": "output", "type": "enum",
         "title": "Strategie (Adjuvant)",
         "definition": (
-            "EXTRAHIERE NUR ADJUVANT TATSÄCHLICH VERABREICHTE REGIME (nicht geplant/erwogen). Meist nach einer Laparotomie. "
+            "EXTRAHIERE NUR ADJUVANT TATSÄCHLICH VERABREICHTE REGIME (nicht geplant/erwogen). Nach einer Laparotomie. "
             "Ordne anhand der im Text dokumentierten Gaben zu. Hinweise wie 'erhielt', 'gab', "
             "'Zyklus', 'C1/2/3', 'Therapie begonnen/fortgeführt' zählen als Verabreichung. "
             "Nur präoperative (adjuvante) Gaben berücksichtigen; neoadjuvante oder Erhaltungshinweise ignorieren. "
-            "Suffix '_6x' bezeichnet die typische 6-Zyklen-Neoadjuvanz; die exakte Zyklusalzahl muss im Text NICHT stehen. "
-            "Mapping:\n"
-            "• 'carboplatin_6x'  → wenn Carboplatin adjuvant gegeben wurde und KEIN Paclitaxel/Bevacizumab erwähnt ist.\n"
-            "• 'carboplatin_or_paclitaxel_6x' → wenn Carboplatin ODER Paclitaxel (oder beide) adjuvant gegeben wurden, "
-            "   ohne Bevacizumab. (Dieses Bucket deckt auch die Standard-KOMBINATION Carbo+Ptx ab.)\n"
-            "• 'carboplatin_or_paclitaxel_bevacizumab_6x' → wenn Carbo/Ptx (eine(r) von beiden oder die Kombination) "
-            "   PLUS Bevacizumab adjuvant gegeben wurden.\n"
-            "• 'op_only' → wenn explizit keine adjuvante Systemtherapie erfolgte (direkte OP).\n"
-            "Gib 'unknown' zurück, wenn keine eindeutige adjuvante Gabe dokumentiert ist oder nur Pläne/Optionen ohne tatsächliche Verabreichung genannt sind."
+            "Suffix '_6x' bezeichnet die typische 6-Zyklen-ADJUVANZ; die exakte Zykluszahl muss im Text NICHT stehen. "
+              "Synonyme/Notation: 'Carboplatin/Paclitaxel', 'Carbo+Ptx', 'Carboplatin & Paclitaxel' → beide gemeinsam; "
+              "'… und Bevacizumab' kennzeichnet zusätzliches Bevacizumab.\n"
+              "Mapping:\n"
+              "• 'carboplatin_6x' → wenn ausschließlich Carboplatin adjuvant gegeben wurde (KEIN Paclitaxel, KEIN Bevacizumab).\n"
+              "• 'carboplatin_and_paclitaxel_6x' → wenn Carboplatin UND Paclitaxel adjuvant gemeinsam gegeben wurden (ohne Bevacizumab).\n"
+              "• 'carboplatin_and_paclitaxel_and_bevacizumab_6x' → wenn Carboplatin UND Paclitaxel UND Bevacizumab adjuvant gemeinsam gegeben wurden.\n"
+              "• 'op_only' → wenn ausdrücklich KEINE adjuvante Systemtherapie erfolgte (nur OP). Aber trotzdem eben eine adjuvante Therapie genannt wird. \n" # TODO
+              "Gib 'unknown' zurück, wenn keine eindeutige adjuvante Gabe dokumentiert ist oder nur Pläne/Optionen ohne tatsächliche Verabreichung genannt sind."
         ),
         "allowed": [
             "op_only",
             "carboplatin_6x",
-            "carboplatin_or_paclitaxel_6x",
+            "carboplatin_and_paclitaxel_6x",
             # TODO Klärung Begriff
-            "carboplatin_or_paclitaxel_bevacizumab_6x",
+            "carboplatin_and_paclitaxel_and_bevacizumab_6x",
             "unknown"
         ],
         "producer": ["llm"],  # Step-Output
@@ -287,25 +295,25 @@ FACT_SCHEMA = {
         "role": "output", "type": "enum",
         "title": "Strategie (Neoadjuvant)",
         "definition": (
-            "EXTRAHIERE NUR NEODJUVANT TATSÄCHLICH VERABREICHTE REGIME (nicht geplant/erwogen). Meist nach einer Laparoskopie oder Mini-Laparotomie. "
+            "EXTRAHIERE NUR NEOADJUVANT TATSÄCHLICH VERABREICHTE REGIME (nicht geplant/erwogen). Nach einer Laparoskopie oder MINIlaparotomie. "
             "Ordne anhand der im Text dokumentierten Gaben zu. Hinweise wie 'erhielt', 'gab', "
             "'Zyklus', 'C1/2/3', 'Therapie begonnen/fortgeführt' zählen als Verabreichung. "
             "Nur präoperative (neoadjuvante) Gaben berücksichtigen; adjuvante oder Erhaltungshinweise ignorieren. "
-            "Suffix '_3x' bezeichnet die typische 3-Zyklen-Neoadjuvanz; die exakte Zyklusalzahl muss im Text NICHT stehen. "
-            "Mapping:\n"
-            "• 'carboplatin_3x'  → wenn Carboplatin neoadjuvant gegeben wurde und KEIN Paclitaxel/Bevacizumab erwähnt ist.\n"
-            "• 'carboplatin_or_paclitaxel_3x' → wenn Carboplatin ODER Paclitaxel (oder beide) neoadjuvant gegeben wurden, "
-            "   ohne Bevacizumab. (Dieses Bucket deckt auch die Standard-KOMBINATION Carbo+Ptx ab.)\n"
-            "• 'carboplatin_or_paclitaxel_bevacizumab_3x' → wenn Carbo/Ptx (eine(r) von beiden oder die Kombination) "
-            "   PLUS Bevacizumab neoadjuvant gegeben wurden.\n"
-            "• 'op_only' → wenn explizit keine neoadjuvante Systemtherapie erfolgte (direkte OP).\n"
-            "Gib 'unknown' zurück, wenn keine eindeutige neoadjuvante Gabe dokumentiert ist oder nur Pläne/Optionen ohne tatsächliche Verabreichung genannt sind."
+            "Suffix '_3x' bezeichnet die typische 3-Zyklen-NEOADJUVANZ; die exakte Zykluszahl muss im Text NICHT stehen. "
+              "Synonyme/Notation: 'Carboplatin/Paclitaxel', 'Carbo+Ptx', 'Carboplatin & Paclitaxel' → beide gemeinsam; "
+              "'… und Bevacizumab' kennzeichnet zusätzliches Bevacizumab.\n"
+              "Mapping:\n"
+              "• 'carboplatin_3x' → wenn ausschließlich Carboplatin neoadjuvant gegeben wurde (KEIN Paclitaxel, KEIN Bevacizumab).\n"
+              "• 'carboplatin_and_paclitaxel_3x' → wenn Carboplatin UND Paclitaxel neoadjuvant gemeinsam gegeben wurden (ohne Bevacizumab).\n"
+              "• 'carboplatin_and_paclitaxel_and_bevacizumab_3x' → wenn Carboplatin UND Paclitaxel UND Bevacizumab neoadjuvant gemeinsam gegeben wurden.\n"
+              "• 'op_only' → wenn ausdrücklich KEINE neoadjuvante Systemtherapie erfolgte (nur OP). Aber trotzdem eben eine neoadjuvante Therapie genannt wird. \n" # TODO
+              "Gib 'unknown' zurück, wenn keine eindeutige neoadjuvante Gabe dokumentiert ist oder nur Pläne/Optionen ohne tatsächliche Verabreichung genannt sind."
         ),
         "allowed": [
             "op_only",
             "carboplatin_3x",
-            "carboplatin_or_paclitaxel_3x",
-            "carboplatin_or_paclitaxel_bevacizumab_3x",
+            "carboplatin_and_paclitaxel_3x",
+            "carboplatin_and_paclitaxel_and_bevacizumab_3x",
             "unknown"
         ],
         "producer": ["llm"],  # Step-Output
@@ -556,11 +564,6 @@ FACT_SCHEMA = {
         "allowed": ["benigne_wahrscheinlich","maligne_wahrscheinlich","nicht_klassifizierbar"],
         "producer": ["iota_simple_rules"],
     },
-    "cyst_bd": {
-        "role": "output", "type": "enum",
-        "allowed": ["BD1","BD2","BD3","BD4", "unknown"], # TODO
-        "producer": ["bd_classification"],
-    },
     "op_plan": {
         "role": "output", "type": "enum",
         "allowed": ["no_op","Zystenausschälung","Adnektomie","unknown"], # TODO unknown ?
@@ -583,8 +586,8 @@ FACT_SCHEMA = {
             "op_only",
             "carboplatin_optional_6x",
             "carboplatin_6x",
-            "carboplatin_or_paclitaxel_6x",
-            "carboplatin_or_paclitaxel_bevacizumab_6x",
+            "carboplatin_and_paclitaxel_6x",
+            "carboplatin_and_paclitaxel_and_bevacizumab_6x",
         ],
         "producer": ["set_planning_adjuvant_therapy"],
     },
@@ -609,8 +612,8 @@ FACT_SCHEMA = {
             "op_only",
             "carboplatin_optional_3x",
             "carboplatin_3x",
-            "carboplatin_or_paclitaxel_3x",
-            "carboplatin_or_paclitaxel_bevacizumab_3x",
+            "carboplatin_and_paclitaxel_3x",
+            "carboplatin_and_paclitaxel_and_bevacizumab_3x",
         ],
         "producer": ["set_planning_neoadjuvant_therapy"],
     },

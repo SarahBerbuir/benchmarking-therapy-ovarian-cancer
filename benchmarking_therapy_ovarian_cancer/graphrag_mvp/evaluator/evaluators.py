@@ -97,7 +97,7 @@ def set_figo_bucket(facts: Dict[str, Any]) -> dict[str, str]:
     needs: ["figo_clinical"]
     """
     figo_clinical = facts.get("figo_clinical")
-    cut = FIGO_STAGES.index("IIIC") # TODO richtig ?
+    cut = FIGO_STAGES.index("IIB")
     s = figo_clinical.upper().replace(" ", "")
     if s in set(FIGO_STAGES[:cut]):
         bucket = "early"
@@ -211,7 +211,7 @@ def get_systematic_therapy_strategy_and_step(facts, type_surgery):
 def set_planning_adjuvant_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
     """
     Maps inputs to an adjuvant therapy plan.
-    plan_strategy_adjuvant: 'carboplatin_optional_6x' | 'carboplatin_6x' | 'carboplatin_or_paclitaxel_6x' | 'carboplatin_or_paclitaxel_bevacizumab_6x'
+    plan_strategy_adjuvant: 'carboplatin_optional_6x' | 'carboplatin_6x' | 'carboplatin_and_paclitaxel_6x' | 'carboplatin_and_paclitaxel_and_bevacizumab_6x'
     plan_next_step_adjuvant: 'Nachsorge' | 'Erhaltungstherapie'
     """
 
@@ -226,7 +226,7 @@ def set_planning_adjuvant_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
 def set_planning_neoadjuvant_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
     """
     Maps inputs to a neoadjuvant therapy plan.
-    plan_strategy_neoadjuvant: 'op_only' | 'carboplatin_optional_3x' | 'carboplatin_3x' | 'carboplatin_or_paclitaxel_3x' | 'carboplatin_or_paclitaxel_bevacizumab_3x'
+    plan_strategy_neoadjuvant: 'op_only' | 'carboplatin_optional_3x' | 'carboplatin_3x' | 'carboplatin_and_paclitaxel_3x' | 'carboplatin_and_paclitaxel_and_bevacizumab_3x'
     plan_next_step_neoadjuvant: 'Nachsorge' | 'Erhaltungstherapie'
     """
     plan_strategy, plan_next = get_systematic_therapy_strategy_and_step(facts=facts, type_surgery="laparoscopy")
