@@ -41,18 +41,18 @@ names = {
 
     "followUpCare": "Nachsorge",
 
-    "routeFollowUpOp": "Route Verlaufskontrolle (op_plan)",
-    "routeFollowUpCystectomy": "Route Verlaufskontrolle (Histologie Zystenausschälung)",
-    "routeAdnexectomyOpPlan": "Route Adnektomie (op_plan Adnexectomy)",
-    "routeFollowUpAdnex": "Route Verlaufskontrolle (Histologie Adnektomie)",
+    "routeFollowUpOp": "Route Verlaufskontrolle (Keine OP)",
+    "routeFollowUpCystectomy": "Route Verlaufskontrolle (Histologie Zystenausschälung benigne)",
+    "routeAdnexectomyOpPlan": "Route Adnektomie (Op Plan Adnektomie)",
+    "routeFollowUpAdnex": "Route Verlaufskontrolle (Histologie Adnektomie benigne)",
 
-    "routeFollowUpLaparotomy": "Route Verlaufskontrolle (Laparotomie)",
-    "routeFollowUpLaparoscopy": "Route Verlaufskontrolle (Laparoskopie)",
+    "routeFollowUpLaparotomy": "Route Verlaufskontrolle (Histologie Laparotomie benigne)",
+    "routeFollowUpLaparoscopy": "Route Verlaufskontrolle (Histologie Laparoskopie benigne)",
 
     "routeAdnexectomyCFigo": "Route Adnektomie (cFIGO early)",
-    "routeDebulkingAssFIGOBucket": "Route Debulking Assessment (FIGO Bucket)",
-    "routeDebulkingAssCystectomy": "Route Debulking Assessment (Zystenausschälung)",
-    "routeDebulkingAssAdnexectomy": "Route Debulking Assessment (Adnektomie)",
+    "routeDebulkingAssFIGOBucket": "Route Debulking Assessment (FIGO Bucket advanced)",
+    "routeDebulkingAssCystectomy": "Route Debulking Assessment (Histologie Zystenausschälung maligne)",
+    "routeDebulkingAssAdnexectomy": "Route Debulking Assessment (Histologie Adnektomie maligne)",
 
     "routeInterdTbLaparotomy": "Route Interdisziplinäres Tumorboard (Laparotomie)",
     "routeInterdTbLaparoscopy": "Route Interdisziplinäres Tumorboard (Laparoskopie)",

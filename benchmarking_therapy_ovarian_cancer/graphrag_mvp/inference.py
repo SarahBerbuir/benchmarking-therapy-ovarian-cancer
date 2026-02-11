@@ -49,3 +49,12 @@ def run_inference(kg: KG, pid: str, patient_text: str):
         "history": history,
         "llm_json": llm_json,
     }
+    print(f"[endInference] {summary}")
+
+    anchor = kg.pick_anchor(pid, root_name=ROOT_STEP)
+    print(f"[anchor] anchor={anchor}")
+
+
+    therapy_recommendation = get_graph_recommendation(kg, pid, anchor)
+    print(f"[therapy_recommendation] {therapy_recommendation}")
+    return therapy_recommendation
