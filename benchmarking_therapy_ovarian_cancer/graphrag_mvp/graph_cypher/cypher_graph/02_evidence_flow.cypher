@@ -119,22 +119,16 @@ UNWIND [
   [names.adjuvantTherapy, names.nextStepMappingAdj],
 
   [names.nextStepMappingAdj, names.routeAdjuvantNextStep],
-  [names.routeAdjuvantNextStep, names.parallelJoin],
-
-  [names.nextStepMappingAdj, names.routeSystemDoneAdj],
+  [names.routeAdjuvantNextStep, names.routeSystemDoneAdj],
   [names.routeSystemDoneAdj, names.parallelJoin],
 
   // Neoadjuvante Therapie
   [names.interdTb, names.neoadjuvantTherapyMapping],
   [names.neoadjuvantTherapyMapping, names.neoadjuvantTherapy],
   [names.neoadjuvantTherapy, names.nextStepMappingNeoAdj],
-
   [names.nextStepMappingNeoAdj, names.routeNeoadjuvantNextStep],
-  [names.routeNeoadjuvantNextStep, names.parallelJoin],
+  [names.routeNeoadjuvantNextStep, names.interimRestagingCycle3],
 
-  [names.nextStepMappingNeoAdj, names.routeSystemDoneNeoadj],
-
-  [names.nextStepMappingNeoAdj, names.interimRestagingCycle3],
   [names.interimRestagingCycle3, names.chemoProtocolSwitchAndCompletion],
   [names.chemoProtocolSwitchAndCompletion, names.repeatDebulkingAssessment],
 
