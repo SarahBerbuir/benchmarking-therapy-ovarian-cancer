@@ -83,17 +83,18 @@ def generate_oncology_prompt(row: pd.Series) -> str:
 
 def classify_oncology_status(df):
     df_out, sys_msg, rules_text, user_tmpl = evaluate_oncology_status(df)
-    metrics = evaluate_oncology_binary(df_out)
-    print(f"Metrics classification oncology status: {metrics}")
-    save_run_json(
-        metrics=metrics,
-        system_msg=sys_msg,
-        rules_text=rules_text,
-        user_template=user_tmpl,
-        model_name=config.LLM_MODEL_NAME,
-        n_cases=len(df_out),
-        out_path="runs/oncology_runs.json",
-    )
+    # TODO
+    # metrics = evaluate_oncology_binary(df_out)
+    # print(f"Metrics classification oncology status: {metrics}")
+    # save_run_json(
+    #     metrics=metrics,
+    #     system_msg=sys_msg,
+    #     rules_text=rules_text,
+    #     user_template=user_tmpl,
+    #     model_name=config.LLM_MODEL_NAME,
+    #     n_cases=len(df_out),
+    #     out_path="runs/oncology_runs.json",
+    # )
     return df_out
 
 def evaluate_oncology_status(

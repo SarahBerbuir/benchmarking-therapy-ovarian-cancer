@@ -15,6 +15,7 @@ class LlmStrategy(Enum):
     VANILLA = "vanilla"
     RAG = "rag"
     LONG_CTX = "long_ctx"
+    GRAPHRAG = "graphrag"
 
 def prefix_for(strategy: LlmStrategy) -> str:
     return strategy.value
@@ -25,13 +26,15 @@ _COL_TEMPLATES = {
     "reasoning": "{pfx}_begründung",
 }
 
+
 class EvaluationMetrics(Enum):
-    COSINE = "cosine"
+    COSINE = "cosine"         # bleibt TF-IDF Cosine
+    EMBED_COSINE = "embed_cosine"
+    RERANKER = "reranker"
     BERT = "bert"
     BLEU = "bleu"
     ROUGE = "rouge"
     LLM_AS_A_JUDGE = "llm_as_a_judge"
-
 
 def cols_for(strategy: LlmStrategy) -> dict[str, str]:
     """Return dict mit keys: output, reco, reasoning."""
@@ -40,9 +43,6 @@ def cols_for(strategy: LlmStrategy) -> dict[str, str]:
 
 def reco_col_for(strategy: LlmStrategy) -> str:
     return cols_for(strategy)["reco"]
-
-def output_col_for(strategy: LlmStrategy) -> str:
-    return cols_for(strategy)["output"]
 
 def reasoning_col_for(strategy: LlmStrategy) -> str:
     return cols_for(strategy)["reasoning"]
@@ -61,9 +61,13 @@ def metric_col(metric: EvaluationMetrics, strategy: LlmStrategy, suffix: str | N
 gold_standard_col = "Original Tumorboard-Empfehlung"
 
 # Data paths
-RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "Raw_Deutsch_OV.xlsx"
-OUTPUT_DATA_PATH = BASE_DIR / "data" / "processed" / "Raw_Deutsch_OV_wLLM.xlsx"
+RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "2026-02-09_Raw_Deutsch_OV.xlsx"
+OUTPUT_DATA_PATH = BASE_DIR / "data" / "processed" / "Raw_Deutsch_OV_wLLM5.xlsx"
 GUIDELINE_DATA_PATH = BASE_DIR / "data" / "raw" / "LL_Ovarialkarzinom_Langversion_6.0.pdf"
+CREDENTIALS_NEO4J = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/credentials_neo4j.json"
+CREATE_NODES = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/graph_cypher/cypher_graph/01_create_names.cypher"
+CREATE_FLOW_EVIDENCE = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/graph_cypher/cypher_graph/02_evidence_flow.cypher"
+CREATE_FACTS = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/graph_cypher/cypher_graph/03_facts.cypher"
 
 # Google Cloud config
 gcp_project_id = os.getenv("GCP_PROJECT_ID")
@@ -72,28 +76,9 @@ gcp_region = "us-central1"
 
 # Model configuration
 # TODO try out more
-LLM_MODEL_NAME = "gemini-2.0-flash"
+LLM_MODEL_NAME = "gemini-2.5-flash"
 EMBEDDING_MODEL_NAME = "pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb"
 
-
-#
-# # LLM
-# llm_output_col = "LLM Evaluation"
-# llm_output_col_recommendation = "LLM_Empfehlung"
-# llm_output_col_reasoning = "LLM_Begründung"
-# llm_cosine_similarity_col = "cos_sim_llm"
-#
-# # Basic RAG
-# rag_output_col = "RAG Evaluation"
-# rag_output_col_recommendation = "RAG_Empfehlung"
-# rag_output_col_reasoning = "RAG_Begründung"
-# rag_cosine_similarity_col = "cos_sim_rag"
-#
-# # Long context LLM
-# long_context_output_col = "Long Context LLM Evaluation"
-# long_context_output_col_recommendation = "Long_Context_LLM_Empfehlung"
-# long_context_output_col_reasoning = "Long_Context_LLM_Begründung"
-# long_context_cosine_similarity_col = "cos_sim_long_context_llm"
 
 generation_config = GenerationConfig(
     temperature=0.4,
@@ -103,8 +88,8 @@ generation_config = GenerationConfig(
 )
 
 safety_settings = {
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
 }
