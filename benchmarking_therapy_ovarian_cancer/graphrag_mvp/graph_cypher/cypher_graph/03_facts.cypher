@@ -435,9 +435,11 @@ MERGE (stepChemoProtocolSwitchAndCompletion)-[:REQUIRES_FACT {value:false}]->(fk
 
 
 WITH s
-MATCH (fkChemoSwitchCompletionEv:FactKey {key:"ev_chemo_protocol_switch_completion_done"})
-WITH s, fkChemoSwitchCompletionEv, s.repeatDebulkingAssessment AS stepRepeatDebulkingAssessment
-MERGE (stepRepeatDebulkingAssessment)-[:REQUIRES_FACT {value:true}]->(fkChemoSwitchCompletionEv)
+MERGE (fkChangedThPr:FactKey {key:"changed_therapy_protocol"})
+WITH s, fkChangedThPr, s.repeatDebulkingAssessment AS stepRepeatDebulkingAssessment, s.chemoProtocolSwitchAndCompletion AS stepChemoProtocolSwitchAndCompletion
+MERGE (stepChemoProtocolSwitchAndCompletion)-[:PROVIDES_FACT {hard:true}]->(fkChangedThPr)
+MERGE (stepRepeatDebulkingAssessment)-[:NEEDS_FACT]->(fkChangedThPr)
+
 
 WITH s
 MERGE (fkRepeatedDebPoss:FactKey {key:"repeated_debulking_possible"})
@@ -453,10 +455,15 @@ MERGE (stepRouteOptimalDebulkingComplRepeatDebAss)-[:PROVIDES_FACT]->(fkRouteOpt
 MERGE (stepRouteOptimalDebulkingComplRestaging)-[:PROVIDES_FACT]->(fkRouteOptDeb)
 MERGE (stepOptimalDebulkingChemoCompl)-[:REQUIRES_FACT {value:true}]->(fkRouteOptDeb)
 
+
 WITH s
-MATCH (fkOptDebChemoComplEv:FactKey {key:"ev_optimal_debulking_completion_done"})
-WITH s, fkOptDebChemoComplEv, s.routeSystemDoneNeoadj AS stepRouteSystemDoneNeoadj
-MERGE (stepRouteSystemDoneNeoadj)-[:REQUIRES_FACT {value:true}]->(fkOptDebChemoComplEv)
+MERGE (fkOptDebChemoCompl:FactKey {key:"optimal_debulking_completion"})
+WITH s, fkOptDebChemoCompl, s.routeSystemDoneNeoadj AS stepRouteSystemDoneNeoadj, s.optimalDebulkingChemoCompl AS stepOptimalDebulkingChemoCompl
+MERGE (stepOptimalDebulkingChemoCompl)-[:PROVIDES_FACT {hard:true}]->(fkOptDebChemoCompl)
+MERGE (stepRouteSystemDoneNeoadj)-[:REQUIRES_FACT {value:true}]->(fkOptDebChemoCompl)
+
+
+
 
 // Zusammenführung Systemtherapie
 WITH s
@@ -498,7 +505,7 @@ MERGE (stepFollowUpCare)-[:REQUIRES_FACT {value:true}]->(fkFollowUpCare)
 WITH s
 MERGE (fkPlanStrategyMaintenance:FactKey {key:"plan_strategy_maintenance"})
 WITH s, fkPlanStrategyMaintenance, s.maintenanceTherapyMapping AS stepMaintenanceTherapyMapping, s.maintenanceTherapy AS stepMaintenanceTherapy
-MERGE (stepMaintenanceTherapyMapping)-[:PROVIDES_FACT]->(fkPlanStrategyMaintenance)
+MERGE (stepMaintenanceTherapyMapping)-[:PROVIDES_FACT {hard:true}]->(fkPlanStrategyMaintenance)
 MERGE (stepMaintenanceTherapy)-[:NEEDS_FACT]->(fkPlanStrategyMaintenance)
 
 
