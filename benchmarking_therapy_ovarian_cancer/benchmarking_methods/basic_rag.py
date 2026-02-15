@@ -69,7 +69,7 @@ def build_rag_llm_fn(
     max_output_tokens: int = 2048,
 ) -> Callable[[str], str]:
     load_dotenv()
-    os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", "../credentials.json")
+    os.environ.setdefault("GOOGLE_APPLICATION_CREDENTIALS", str(config.CREDENTIALS_PATH))
 
     key = _cache_key(pdf_path, embedding_model_name)
     if key in _CACHE:
