@@ -1,6 +1,5 @@
 from typing import Any, Sequence
 
-# TODO I, II und so weg
 FIGO_I = ["IA", "IB", "IC1", "IC2", "IC3"]
 FIGO_II = ["IIA", "IIB", "IIC"]
 FIGO_III = ["IIIA", "IIIA1", "IIIA2", "IIIB", "IIIC"]
@@ -74,9 +73,9 @@ FACT_SCHEMA = {
     },
     "praemenopausal": {
         "role": "input",
-        "type": "bool2",
+        "type": "bool3",
         "title": "Prämenopausal",
-        "definition": "Menstruationsstatus prämenopausal (regelmäßige Blutungen oder dokumentiert prämenopausal). FALSE bei Postmenopause (Amenorrhoe ≥12 Monate, bilaterale Oophorektomie oder explizit postmenopausal)",
+        "definition": "Menstruationsstatus prämenopausal (regelmäßige Blutungen oder dokumentiert prämenopausal). FALSE bei Postmenopause (Amenorrhoe ≥12 Monate, bilaterale Oophorektomie oder explizit postmenopausal). Falls nicht erwähnt: UNKNOWN.",
         "producer": ["llm"],
     },
     "symptoms_present": {
@@ -88,13 +87,13 @@ FACT_SCHEMA = {
     "growth": {
         "role": "input", "type": "bool2",
         "title": "Größenzunahme",
-        "definition": "Zunahme der Läsionsgröße im zeitlichen Verlauf (Serienbildgebung/Verlauf). TRUE bei dokumentiertem Wachstum; FALSE sonst. Falls unklar/nicht erwähnt: FALSE.",
+        "definition": "Zunahme der Läsionsgröße im zeitlichen Verlauf (Serienbildgebung/Verlauf). TRUE nur bei explizit dokumentiertem Wachstum; FALSE sonst. Falls unklar/nicht erwähnt: FALSE.",
         "producer": ["llm"],
     },
     "persistence": {
         "role": "input", "type": "bool2",
         "title": "Persistenz",
-        "definition": "Persistenz der Läsion über einen längeren Beobachtungszeitraum (typisch >6–12 Wochen). TRUE bei dokumentierter Persistenz; FALSE sonst. Falls nicht erwähnt: FALSE.",
+        "definition": "Persistenz der Läsion über einen längeren Beobachtungszeitraum (typisch >6–12 Wochen). TRUE nur bei explizit dokumentierter Persistenz; FALSE sonst. Falls unklar/nicht erwähnt: FALSE.",
         "producer": ["llm"],
     },
     "complex_multiloculaer": {
@@ -106,7 +105,7 @@ FACT_SCHEMA = {
     "psychic_unsure": {
         "role": "input", "type": "bool2",
         "title": "Psychische Unsicherheit",
-        "definition": "Dokumentierte Unsicherheit/Angst/Entscheidungsschwierigkeit der Patientin, die die Therapieentscheidung beeinflusst (z. B. expliziter OP-Wunsch aus Sorge). TRUE bei Erwähnung; sonst FALSE (auch wenn nicht erwähnt).",
+        "definition": "Dokumentierte Unsicherheit/Angst/Entscheidungsschwierigkeit der Patientin, die die Therapieentscheidung beeinflusst (z. B. expliziter OP-Wunsch aus Sorge). TRUE nur bei direkter Erwähnung; sonst FALSE (auch wenn nicht erwähnt).",
         "producer": ["llm"],
     },
     "ca125_u_ml": {
@@ -121,7 +120,7 @@ FACT_SCHEMA = {
         "role": "input",
         "type": "number",
         "title": "Größe (cm)",
-        "definition": "Maximaldurchmesser der Läsion in Zentimetern (Bildgebung/OP). Bei mehreren Maßangaben den größten Einzeldurchmesser verwenden. Wenn in mm dann in cm umrechnen. Wenn nicht berichtet: -1.",
+        "definition": "Maximaldurchmesser der Läsion in Zentimetern (Bildgebung/OP). Bei mehreren Maßangaben den größten Einzeldurchmesser verwenden. Wenn in mm dann in cm umrechnen. Achte darauf, wenn <x dann nehme eine Zahl knapp unter x. Wenn nicht berichtet: -1.",
         "pos_examples": ["Größe 8,5 cm", "Durchmesser ca. 6 cm", "ca. 8-9cm", "20x50 mm"],
         "producer": ["llm"],
     },
@@ -129,34 +128,225 @@ FACT_SCHEMA = {
         "role": "output", "type": "enum",
         "allowed": ["BD1", "BD2", "BD3", "BD4", "unknown"],
         "definition": (
-            "" # TODO
+            "Extrahiere die BD-Klassifikation (BD1/BD2/BD3/BD4) aus dem Sonographie-/Befundtext. "
+            "\n"
+            "GRUNDREGELN:\n"
+            "• Nutze Text-Evidenz aus der Bildgebung/Sonographie (keine Vermutungen).\n"
+            "• Wenn notwendige Merkmale nicht klar genannt sind → 'unknown'.\n"
+            "• Wenn mehrere Kategorien passen würden, nutze diese PRIORITÄT (spezifisch vor allgemein): BD2 > BD1 > BD4 > BD3.\n" # TODO
+            "\n"
+            "BD1 (Endometriom/Endometriosezyste):\n"
+            "• Einkammerige (unilokuläre), glatt begrenzte Zyste mit milchglasartigem/\"ground-glass\" Inhalt/Echogenität\n"
+            "• Oft explizit als Endometriom/Endometriosezyste bezeichnet. Prämenopausale Patientin.\n"
+            "\n"
+            "BD2 (Dermoidzyste):\n"
+            "• Einkammerige (Unilokuläre) Zyste/Tumor mit GEMISCHT echogenem Inhalt (Echogenität) UND Schallschatten.\n"
+            "• Oder explizite Begriffe: Dermoid, Teratom.\n"
+            "\n"
+            "BD3 (Zystadenom, einfache Ovarialzyste):\n"
+            "• Einkammerige, glatt begrenzte Zyste (regelmäßige Wände), maximaler Durchmesser <10 cm.\n"
+            "NUR wenn gleichzeitig unilokulär + glatt begrenzt + <10 cm oder Zystadenom/einfache.\n"
+            "\n"
+            "BD4 (Mehrere einfache Zysten):\n"
+            "• Sonstige einkammerige (unilokulär) galtt begrenzte Zysten"
+            "\n"
+            "unknown:\n"
+            "• Wenn keine ausreichende Beschreibung für BD1–BD4 vorliegt, oder wenn klar andere (maligne) Morphologie dominiert "
+            "(z. B. solide Komponenten, papilläre Auflagerungen, irreguläre Wand, eindeutig multilokulär ohne unilokulär/glatt, Aszites etc.).\n"
+            "\n"
+            "AUSGABE:\n"
+            "• Gib ausschließlich den String zurück: 'BD1' oder 'BD2' oder 'BD3' oder 'BD4' oder 'unknown'. "
+            "Antworte NUR bei expliziter Evidenz. Kein Raten."
         ),
         "producer": ["bd_classification"],
     },
+
     "figo_clinical": {
         "role": "input", "type": "enum",
         "title": "FIGO clinical",
-        "allowed": FIGO_STAGES + ["unknown"],
-        # TODO#  TODO TNM Tabelle
-        "definition": "Klinisches FIGO-Stadium basierend auf Anamnese, Untersuchung und Bildgebung. Gib genau einen Wert aus FIGO_STAGES zurück. Bei Mehrfachnennung das höchste Stadium wählen. UNKNOWN, wenn kein Stadium dokumentiert.",
+        "allowed": FIGO_STAGES, #  + ["unknown"],
+        "definition": (
+            "EXTRAHIERE das klinische FIGO-Stadium (cFIGO) aus dem Text. "
+            "Gib GENAU EINEN Wert aus FIGO_STAGES zurück (IA/IB/IC1/IC2/IC3/IIA/IIB/IIC/IIIA/IIIA1/IIIA2/IIIB/IIIC/IVA/IVB).\n"
+            "\n"
+            "PRIORITÄT & GRUNDREGELN:\n"
+            "1) Direkte FIGO-Nennung hat Vorrang (z. B. 'FIGO IIIC', 'cFIGO IA'). Vor allem klinische Nennung (c..)\n"
+            "2) Wenn KEIN cFIGO genannt ist, aber NUR pathologisches FIGO (z. B. 'pFIGO IIIC') vorkommt: "
+            "übernimm dieses pFIGO als figo_clinical.\n"
+            "3) Wenn mehrere Stadien vorkommen und nicht klar p von c getrennt: wähle das HÖCHSTE (IVB>IVA>IIIC>IIIB>IIIA2>IIIA1>IIIA>IIC>IIB>IIA>IC3>IC2>IC1>IB>IA).\n"
+            #"4) Antworte 'unknown', wenn weder FIGO/TNM noch klare Merkmals-Evidenz für ein FIGO-Stadium im Text steht. Kein Raten.\n"
+            "\n"
+            "WICHTIG (weil FIGO_STAGES keine Oberstufen enthält):\n"
+            "• Wenn im Text nur 'FIGO I' ohne Substadium steht → gib 'IA' zurück.\n"
+            "• Wenn nur 'FIGO II' steht → 'IIA'.\n"
+            "• Wenn nur 'FIGO III' steht → 'IIIA'.\n"
+            "• Wenn nur 'FIGO IV' steht → 'IVA'.\n"
+            "\n"
+            "A) DIREKTE FIGO-ERKENNUNG:\n"
+            "• Erkenne Schreibweisen: 'FIGO IA', 'FIGO IC1', 'FIGO IIIA1', 'FIGO IVB', auch mit Präfixen c/p (cFIGO/pFIGO).\n"
+            "\n"
+            "B) TNM → FIGO (nach TNM/FIGO-Tabelle):\n"
+            "Nutze TNM-Angaben (auch cT/pT, cN/pN, cM/pM) oder auch nachfolgende klinische Formulierung und das Mapping\n"
+            "C) MERKMAL-/FORMULIERUNGSBASIERTES cFIGO (aus Histologie/Bildgebung/Anamnese; erlaubt als 'klinisch'):\n"
+            "Wenn keine klare FIGO/TNM-Angabe vorhanden ist, darfst du cFIGO aus expliziten Merkmalen die nach dem Mapping stehen ableiten. "
+            "Nutze dafür NUR klare Text-Evidenz (keine Interpretation ohne Begriffsnennung).\n"
+            
+            "Mapping:"
+            "STADIUM I (Ovar/Tuba begrenzt):\n"
+            "• T1 → IA  - Tumor auf ein oder beide Ovarien beschränkt oder 1 Ovar oder Tube befallen\n" # TODO
+            "• T1a → IA    - 1 Ovar oder Tube befallen, Kapsel oder Serosa intakt, Ovar-/ Tubenoberfläche tumorfrei, Spülflüssigkeit (Spülzytologie) tumorzellfrei\n"
+            "• T1b → IB    - Beide Ovarien oder Tuben befallen, Kapsel oder Serosa intakt, Ovar-/ Tubenoberfläche tumorfrei und Spülflüssigkeit tumorzellfrei \n"
+            "• T1c → \n"
+            "       - IC1   - Wie IA oder IB; chirurgisch bedingte Ovarleckage.\n"
+            "       - IC2   - Wie IA oder IB; Kapselruptur vor der OP oder Tumorzellen auf der Ovar-/ Tubenoberfläche\n"
+            "       - IC3   - Wie IA oder IB; maligne Zellen in Aszites oder peritonealer Spülung\n"
+            "STADIUM II (Ausbreitung ins kleine Becken):\n"
+            "• T2 → II    - Befall eines oder beider Ovarien / Tuben, zytologisch oder histologisch nachgewiesener Ausbreitung in das kleine Becken oder primäres Peritonealkarzinom\n"
+            "• T2a → IIA    - Ausbreitung auf Uterus und/oder Ovarien / Tube(n)\n"
+            "• T2b → IIB    - Ausbreitung auf weitere intraperitoneale Strukturen im Bereich des kleinen Beckens\n"
+            "• T2c → IIC    - Wie IIA oder IIB; zusätzlich maligne Zellen in Aszites oder Peritonealspülung\n"
+            "STADIUM III (extrapelvine peritoneale Ausbreitung oder retroperitoneale LK):\n"
+            "• N1 und/oder T3 → III    - wie II aber mit Ausbreitung außerhalb des kleinen Beckens und/oder Metastasen in den retroperitonealen LK\n"
+            "• T3a → IIIA   - Retroperitoneale LK befallen und/oder mikroskopische Metastasen außerhalb des Beckens\n"
+            "• T3 N1a / N1b → IIIA2\n"
+            "• T3a, jedes N → IIIA2 - Mikroskopischer extrapelviner peritonealer Tumorbefall ± pos. retroperitoneale LK\n"
+            "• T3b, jedes N → IIIB  - Makroskopische extrapelvine Peritonealmetastasen (≤ 2 cm) ± pos. retroperitoneale LK und Ausdehnung auf Leber-/Milzkapsel\n"
+            "• T3c, jedes N → IIIC  - Extrapelvine Peritonealmetastasen (> 2 cm) ± pos. retroperitoneale LK und Ausdehnung auf Leber-/Milzkapsel\n"
+            "STADIUM M1 → IV (Fernmetastasen außer peritoneale Metastasen):\n"
+            "• M1a → IVA    - Pleuraerguss mit pos. Zytologie\n"
+            "• M1b → IVB    - Leber- und/oder Milzmetastasen; Metastasen außerhalb des Peritonealraums (inkl. inguinale LK und LK außerhalb des Abdominalraums)\n"
+            "Dabei N0: Kein Befall regionärer LK, N1: Befall regionärer LK"
+            "\n"
+
+            "KONSISTENZREGEL:\n"
+            "• Wenn FIGO und TNM/Merkmale widersprüchlich wirken, nimm das HÖCHSTE Stadium, aber nur wenn es explizit genannt "
+            "oder direkt aus TNM bzw. den Merkmal-Regeln ableitbar ist.\n"
+            "\n"
+            "AUSGABE:\n"
+            "• Gib ausschließlich den Stage-String zurück (z. B. 'IC3', 'IIIC', 'IVB'"#, 'unknown')."
+        ),
         "producer": ["llm"],
     },
     "figo_path_laparotomy": {
         "role": "input", "type": "enum",
         "title": "FIGO pathologisch (Laparotomie)",
-        # TODO TNM Tabelle
-        "definition": "Pathologisches FIGO-Stadium aus dem Laparotomie-Präparat. Wert aus FIGO_STAGES (höchstes bei Mehrfachnennung). UNKNOWN, wenn nicht angegeben oder Befund benign.",
         "allowed": FIGO_STAGES + ["unknown"],
+        "definition": (
+            "EXTRAHIERE das pathologische FIGO-Stadium (pFIGO) aus dem Text (OP-/Histologie-/Pathologie-Kontext). "
+            "Gib GENAU EINEN Wert aus FIGO_STAGES zurück (IA/IB/IC1/IC2/IC3/IIA/IIB/IIC/IIIA/IIIA1/IIIA2/IIIB/IIIC/IVA/IVB).\n"
+            "\n"
+            "WICHTIG: KEINE Interpretation aus Beschreibungen/\"Merkmalen\" oder Bildgebung. "
+            "Nutze NUR (A) explizit geschriebenes FIGO/pFIGO ODER (B) TNM→FIGO Mapping.\n"
+            "\n"
+            "PRIORITÄT:\n"
+            "1) pFIGO/FIGO direkt genannt (z. B. 'pFIGO IIIC', 'FIGO IIIB').\n"
+            "2) Wenn kein FIGO genannt ist: mappe TNM → FIGO anhand der Regeln unten.\n"
+            "3) Wenn mehrere Stadien vorkommen: wähle das HÖCHSTE (IVB>IVA>IIIC>IIIB>IIIA2>IIIA1>IIIA>IIC>IIB>IIA>IC3>IC2>IC1>IB>IA).\n"
+            "4) Antworte 'unknown', wenn weder FIGO noch TNM (pT/pN/pM bzw. T/N/M im Patho-Kontext) explizit vorliegt "
+            "oder wenn der Befund benign/ohne Malignitätsnachweis ist. Kein Raten.\n"
+            "\n"
+            "HINWEIS (weil FIGO_STAGES keine Oberstufen enthält):\n"
+            "• Wenn nur 'FIGO I' steht → gib 'IA'.\n"
+            "• Wenn nur 'FIGO II' steht → 'IIA'.\n"
+            "• Wenn nur 'FIGO III' steht → 'IIIA'.\n"
+            "• Wenn nur 'FIGO IV' steht → 'IVA'.\n"
+            "\n"
+            "TNM → FIGO (NUR aus explizitem TNM, bevorzugt pT/pN/pM; cT/cN/cM NICHT als pathologisches TNM verwenden):\n"
+            "STADIUM I (Ovar/Tuba begrenzt):\n"
+            "• T1 → IA\n"
+            "• T1a → IA\n"
+            "• T1b → IB\n"
+            "• T1c → IC1/IC2/IC3 (nur wenn Subtyp explizit als T1c1/T1c2/T1c3 oder IC1/IC2/IC3 genannt ist; "
+            "sonst bei 'T1c' ohne Subtyp → IC1)\n"
+            "\n"
+            "STADIUM II (kleines Becken):\n"
+            "• T2 → IIA (wenn nur T2 ohne Subtyp)\n"
+            "• T2a → IIA\n"
+            "• T2b → IIB\n"
+            "• T2c → IIC\n"
+            "\n"
+            "STADIUM III (extrapelvin/peritoneal oder retroperitoneale LK):\n"
+            "• (N1) und/oder (T3) → IIIA (wenn nur 'N1' oder nur 'T3' ohne Subtyp)\n"
+            "• T3a → IIIA2\n"
+            "• T3b → IIIB\n"
+            "• T3c → IIIC\n"
+            "• T3 + N1a/N1b → IIIA1 (nur wenn diese Kombination explizit so genannt ist)\n"
+            "\n"
+            "STADIUM IV (Fernmetastasen):\n"
+            "• M1a → IVA\n"
+            "• M1b → IVB\n"
+            "• M1 (ohne a/b) → IVA\n"
+            "\n"
+            "KONSISTENZREGEL:\n"
+            "• Wenn FIGO und TNM widersprüchlich wirken: nimm das HÖCHSTE Stadium, aber nur wenn es explizit genannt "
+            "oder direkt aus TNM ableitbar ist.\n"
+            "\n"
+            "AUSGABE:\n"
+            "• Gib ausschließlich den Stage-String zurück (z. B. 'IIIC', 'IVB', 'unknown')."
+        ),
         "producer": ["llm"],
     },
+
     "figo_path_laparoscopy": {
         "role": "input", "type": "enum",
         "title": "FIGO pathologisch (Laparoskopie)",
-        # TODO TNM Tabelle
-        "definition": "Pathologisches FIGO-Stadium aus Laparoskopie/Minilaparotomie. Wert aus FIGO_STAGES (höchstes bei Mehrfachnennung). UNKNOWN, wenn nicht angegeben oder Befund benign.",
         "allowed": FIGO_STAGES + ["unknown"],
+        "definition": (
+            "EXTRAHIERE das pathologische FIGO-Stadium (pFIGO) aus dem Text (OP-/Histologie-/Pathologie-Kontext). "
+            "Gib GENAU EINEN Wert aus FIGO_STAGES zurück (IA/IB/IC1/IC2/IC3/IIA/IIB/IIC/IIIA/IIIA1/IIIA2/IIIB/IIIC/IVA/IVB).\n"
+            "\n"
+            "WICHTIG: KEINE Interpretation aus Beschreibungen/\"Merkmalen\" oder Bildgebung. "
+            "Nutze NUR (A) explizit geschriebenes FIGO/pFIGO ODER (B) TNM→FIGO Mapping.\n"
+            "\n"
+            "PRIORITÄT:\n"
+            "1) pFIGO/FIGO direkt genannt (z. B. 'pFIGO IIIC', 'FIGO IIIB').\n"
+            "2) Wenn kein FIGO genannt ist: mappe TNM → FIGO anhand der Regeln unten.\n"
+            "3) Wenn mehrere Stadien vorkommen: wähle das HÖCHSTE (IVB>IVA>IIIC>IIIB>IIIA2>IIIA1>IIIA>IIC>IIB>IIA>IC3>IC2>IC1>IB>IA).\n"
+            "4) Antworte 'unknown', wenn weder FIGO noch TNM (pT/pN/pM bzw. T/N/M im Patho-Kontext) explizit vorliegt "
+            "oder wenn der Befund benign/ohne Malignitätsnachweis ist. Kein Raten.\n"
+            "\n"
+            "HINWEIS (weil FIGO_STAGES keine Oberstufen enthält):\n"
+            "• Wenn nur 'FIGO I' steht → gib 'IA'.\n"
+            "• Wenn nur 'FIGO II' steht → 'IIA'.\n"
+            "• Wenn nur 'FIGO III' steht → 'IIIA'.\n"
+            "• Wenn nur 'FIGO IV' steht → 'IVA'.\n"
+            "\n"
+              "STADIUM I (Ovar/Tuba begrenzt):\n"
+            "• T1 → IA\n"
+            "• T1a → IA\n"
+            "• T1b → IB\n"
+            "• T1c → IC1/IC2/IC3 (nur wenn Subtyp explizit als T1c1/T1c2/T1c3 oder IC1/IC2/IC3 genannt ist; "
+            "sonst bei 'T1c' ohne Subtyp → IC1)\n"
+            "\n"
+            "STADIUM II (kleines Becken):\n"
+            "• T2 → IIA (wenn nur T2 ohne Subtyp)\n"
+            "• T2a → IIA\n"
+            "• T2b → IIB\n"
+            "• T2c → IIC\n"
+            "\n"
+            "STADIUM III (extrapelvin/peritoneal oder retroperitoneale LK):\n"
+            "• (N1) und/oder (T3) → IIIA (wenn nur 'N1' oder nur 'T3' ohne Subtyp)\n"
+            "• T3a → IIIA2\n"
+            "• T3b → IIIB\n"
+            "• T3c → IIIC\n"
+            "• T3 + N1a/N1b → IIIA1 (nur wenn diese Kombination explizit so genannt ist)\n"
+            "\n"
+            "STADIUM IV (Fernmetastasen):\n"
+            "• M1a → IVA\n"
+            "• M1b → IVB\n"
+            "• M1 (ohne a/b) → IVA\n"
+            "\n"
+            "KONSISTENZREGEL:\n"
+            "• Wenn FIGO und TNM widersprüchlich wirken: nimm das HÖCHSTE Stadium, aber nur wenn es explizit genannt "
+            "oder direkt aus TNM ableitbar ist.\n"
+            "\n"
+            "AUSGABE:\n"
+            "• Gib ausschließlich den Stage-String zurück (z. B. 'IIIC', 'IVB', 'unknown')."
+        ),
         "producer": ["llm"],
     },
+
+
     "grade_laparotomy": {
         "role": "input",
         "type": "enum",
@@ -285,7 +475,6 @@ FACT_SCHEMA = {
             "op_only",
             "carboplatin_6x",
             "carboplatin_and_paclitaxel_6x",
-            # TODO Klärung Begriff
             "carboplatin_and_paclitaxel_and_bevacizumab_6x",
             "unknown"
         ],
@@ -323,12 +512,12 @@ FACT_SCHEMA = {
         "title": "Strategie (Erhaltung)",
         "definition": (
             "Gib die **explizit dokumentierte Erhaltungs-Strategie** wieder (keine Ableitung). "
-            "Token: 'bevac' = Bevacizumab, 'olap' = Olaparib, 'nirap' = Niraparib, 'bevacolap' = **Kombination** Bevacizumab+Olaparib.\n\n"
+            "Token: 'bevacizumab' = Bevacizumab, 'olap' = Olaparib, 'nirap' = Niraparib, 'bevacizumab+olaparib' = **Kombination** Bevacizumab+Olaparib.\n\n"
             "Mapping-Regeln (deterministisch):\n"
-            "  • **Nur Olaparib erwähnt/ggegeben** → `bevacolap_olap_bevac_nirap` (enthält 'olap').\n"
-            "  • **Nur Bevacizumab ODER nur Niraparib** (ohne Olaparib, ohne Kombi) → `bevac_nirap`.\n"
-            "  • **Bevacizumab+Olaparib Kombination** explizit (ohne Olaparib-Monotherapie als Option) → `bevacolap_bevac_nirap`.\n"
-            "  • Wenn sowohl Kombination **und** Olaparib-Monotherapie als Optionen genannt sind → `bevacolap_olap_bevac_nirap`.\n"
+            "  • **Nur Olaparib erwähnt/ggegeben** → `bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib` (enthält 'olap').\n"
+            "  • **Nur Bevacizumab ODER nur Niraparib** (ohne Olaparib, ohne Kombi) → `bevacizumab_or_niraparib`.\n"
+            "  • **Bevacizumab+Olaparib Kombination** explizit (ohne Olaparib-Monotherapie als Option) → `bevacolaparib_or_bevacizumab_or_niraparib`.\n"
+            "  • Wenn sowohl Kombination **und** Olaparib-Monotherapie als Optionen genannt sind → `bevacolaparib_or_olaparib_or_bevacizumab_or_niraparib`.\n"
             "  • Wenn nichts Eindeutiges zur Erhaltung steht → `unknown`.\n\n"
             "Qualifikatoren:\n"
             "  • Nur als Maintenance werten, wenn Erhaltungs-Kontext klar ist ('Erhaltung', 'maintenance', nach Abschluss der Induktion/Systemtherapie). "
@@ -336,15 +525,77 @@ FACT_SCHEMA = {
             "Gib 'unknown' zurück, wenn keine Erhaltungsstrategie/Optionen dokumentiert sind."
 ),
         "allowed": [
-        "bevacolap_olap_bevac_nirap",
-        "bevacolap_bevac_nirap",
-        "bevac_nirap",
+        "bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib",
+        "bevacizumab+olaparib_or_bevacizumab_or_niraparib",
+        "bevacizumab_or_niraparib",
         "unknown"
         ],
         "producer": ["llm"],
     },
-
-
+    "repeated_debulking_possible": {
+        "role": "output", "type": "bool3",
+        "title": "Repeated Debulking",
+        "definition": (
+            "ERNEUTE OPERABILITÄTS-/RESEKTABILITÄTSBEURTEILUNG (Repeated Debulking Assessment) "
+            "NACH zusätzlicher Systemtherapie im neoadjuvanten Verlauf – d. h. nachdem initial Debulking NICHT möglich war "
+            "und nach der C3-Interim-Reevaluation eine weitere/komplementierende Systemtherapie (ggf. Protokollwechsel + "
+            "Komplettierung bis typischerweise C4–C6) erfolgt ist. "
+            "Im Graphen steuert dies: TRUE → Route zum optimalen Debulking + Chemo-Komplementierung, "
+            "FALSE → Therapie Reevaluation (kein Debulking möglich → Gesamtstrategie neu bewerten), "
+            "UNKNOWN → keine belastbare erneute Aussage dokumentiert. "
+            "TRUE nur wenn explizit dokumentiert ist, dass nach der zusätzlichen Therapie jetzt (wieder) operabel/debulkingfähig "
+            "(z. B. 'nun operabel', 'jetzt Debulking möglich', 'Intervall-Debulking geplant/empfohlen', 'R0 erreichbar'). "
+            "FALSE wenn explizit dokumentiert ist, dass weiterhin kein Debulking möglich ist "
+            "(z. B. 'weiterhin inoperabel', 'Debulking weiterhin nicht möglich', 'unresectabel', 'nur palliativ/Best Supportive Care', "
+            "'Reevaluation/Strategiewechsel statt OP'). "
+            "UNKNOWN wenn die erneute Re-Evaluation nicht dokumentiert ist oder nur indirekt/unklar angedeutet wird. "
+            "Wichtig: Nicht verwechseln mit postoperativem Resektionsstatus (R0); hier geht es um die Entscheidung VOR der OP."
+        ),
+        "producer": ["llm"],
+    },
+    "changed_therapy_protocol": {
+        "role": "fact", "type": "enum",
+        "allowed": [True, "unknown"],
+        "title": "Therapieprotokoll gewechselt (nach C3) + Komplettierung",
+        "definition": (
+            "OBJEKTIVER FAKT zur neoadjuvanten Systemtherapie: "
+            "Bewerte, ob NACH einer C3-Interim-(Re-)Evaluation ein tatsächlicher Therapie-/Protokollwechsel "
+            "dokumentiert ist UND anschließend eine Fortführung/Komplettierung weiterer Zyklen dokumentiert ist.\n\n"
+            "True nur wenn beides explizit im Text steht:\n"
+            "(a) Protokollwechsel/Regimewechsel hat stattgefunden (z.B. 'Wechsel auf …', 'Therapie umgestellt', "
+            "'Regime geändert', 'Protokollwechsel durchgeführt')\n"
+            "(b) Fortführung/Komplettierung mit real verabreichten zusätzlichen Zyklen ist dokumentiert "
+            "(z.B. 'Komplettierung bis C6', 'C4–C6 gegeben', 'weitere Zyklen erhalten', 'Therapie fortgeführt/abgeschlossen').\n"
+            "Es muss NICHT genannt sein, auf welches konkrete Regime gewechselt wurde.\n\n"
+            "unknown wenn explizit verneint/ausgeschlossen ist, dass ein Wechsel stattfand ODER dass eine Fortführung/"
+            "Komplettierung nach C3 erfolgte "
+            " oder auch wenn kein eindeutiger Nachweis im Text vorhanden ist oder nur Planung/Optionen erwähnt werden. "
+            "Nicht aus Standardpfaden ableiten. Kein Raten."
+        ),
+        "producer": ["llm"],
+    },
+    "optimal_debulking_completion": {
+        "role": "fact", "type": "enum",
+        "allowed": [True, "unknown"],
+        "title": "Optimales Debulking (R0) + postoperative Chemo-Komplementierung abgeschlossen",
+        "definition": (
+            "FAKT (neoadjuvantes Setting): Prüfe, ob eine Sequenz 'C1–C3 neoadjuvant → OP → C4–C6' "
+            "oder äquivalent eindeutig dokumentiert ist UND die OP als optimales Debulking/R0/complete macroscopic cytoreduction "
+            "beschrieben wird UND die postoperative Chemo-Komplementierung tatsächlich abgeschlossen wurde.\n\n"
+            "True nur wenn ALLE Punkte explizit belegt sind:\n"
+            "1) Neoadjuvante Zyklen vor OP (z.B. '3× neoadjuvant', 'C1–C3 vor OP').\n"
+            "2) OP mit optimalem Debulking (z.B. 'R0', 'optimales Debulking', 'complete cytoreduction'). Achte darauf kein basic Debulking vor Primärtherapie aufzunehmen.\n"
+            "3) Postoperative Komplementierung/Komplettierung der Chemo (z.B. 'C4–C6 gegeben/komplettiert', "
+            "'weitere 3 Zyklen nach OP abgeschlossen').\n\n"
+            "unknown nur wenn explizit ausgeschlossen/verneint:\n"
+            "- OP war nicht optimal (z.B. Resttumor/R1/R2/\"suboptimal\") ODER\n"
+            "- postoperative Komplementierung wurde nicht durchgeführt/abgebrochen ODER\n"
+            "- es war rein adjuvant ohne neoadjuvante Vorzyklen.\n\n"
+            "oder wenn unklar/fehlend (z.B. keine klare Sequenz, keine klare R0/optimal-Formulierung, "
+            "Komplementierung nicht sicher dokumentiert). Kein Raten."
+        ),
+        "producer": ["llm"],
+    },
     # --- Evidence ---
     "ev_sonography_present": {
         "role": "evidence", "type": "bool2",
@@ -361,6 +612,7 @@ FACT_SCHEMA = {
             "FALSE, wenn in 'Körperliche Untersuchung' kein solcher Hinweis steht. "
             "Hinweis: Reine CT-/MRT-Formulierungen oder Laborwerte gelten nicht als Sonographie-Evidenz."
             "Planung/Anforderung ohne Ergebnis zählt NICHT als TRUE."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -368,9 +620,11 @@ FACT_SCHEMA = {
         "role": "evidence", "type": "bool2",
         "title": "CT-Befund in Akte vorhanden",
         "definition": (
-            "EVIDENZ, dass ein CT Thorax/Abdomen (ggf. CT Abdomen/Becken) durchgeführt UND im Text dokumentiert wurde. Spalte 'Bildgebung' ist dafür am wichtigsten."
+            "EVIDENZ, dass ein CT Thorax/Abdomen (ggf. CT Abdomen/Becken) durchgeführt wurde. "
+            "Spalte 'Bildgebung' ist dafür am wichtigsten."
             "TRUE bei expliziter CT-Nennung (z. B. 'CT', 'CT Abdomen/Thorax', 'Kontrastmittel-CT') oder bei eindeutigem CT-Befundzitat."
             "MRI/Ultraschall/Laparoskopie NICHT mitzählen. Planung/Anforderung ohne Ergebnis zählt NICHT als TRUE."
+            "Antworte TRUE wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -387,6 +641,7 @@ FACT_SCHEMA = {
             "FALSE bei: reiner Adnektomie/Laparotomie/Debulking ohne Zystektomie-Bezug; adjuvante/neoadjuvante Therapieangaben; "
             "allgemeiner Ovarialkarzinom-/FIGO-/Grading-Text ohne OP-Bezug; bloße Planung/Anforderung. "
             "Bevorzugung: Falls sowohl Zystektomie als auch Adnektomie genannt werden, sind BEIDE separat nur dann TRUE, wenn jeweils explizit als durchgeführt dokumentiert." # TODO
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -405,6 +660,7 @@ FACT_SCHEMA = {
             "FALSE bei: allgemeiner Laparotomie/Debulking ohne Adnex-Tokens; reinem Karzinom-/FIGO-/Grading-Text; "
             "Chemo-Angaben (adjuvant/neoadjuvant); bloßer Planung/Indikation ohne Durchführung. "
             "WICHTIG: Das Wort 'Laparotomie' allein reicht NICHT; es ist nur der Zugang. Es muss eine Adnex-Entfernung explizit benannt sein."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -421,6 +677,8 @@ FACT_SCHEMA = {
             "(z. B. 'Laparotomiepräparat', 'offenes Debulking'). "
             "WICHTIG: Diese Evidence erfasst NUR den durchgeführten Zugang. Inhalte wie Histologie/FIGO werden separat extrahiert. "
             "FALSE bei reiner Planung/Indikation ohne Durchführung oder wenn ausschließlich eine Laparoskopie dokumentiert ist."
+            "FALSE, wenn im Text kein expliziter Hinweis auf (a) Protokollwechsel UND (b) Fortführung/Komplettierung nach C3 vorhanden ist."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -439,6 +697,7 @@ FACT_SCHEMA = {
             "WICHTIG: Diese Evidence erfasst NUR den durchgeführten Zugang. Inhalte wie Histologie (benigne/maligne) oder FIGO "
             "werden separat über ihre Fakt-Keys extrahiert und sind keine Voraussetzung für TRUE. "
             "FALSE bei reiner Planung/Indikation ohne Durchführung oder wenn ausschließlich eine offene Laparotomie dokumentiert ist."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -451,7 +710,7 @@ FACT_SCHEMA = {
         "oder **gBRCA**-Befund vorliegend/berichtete). "
         "Nur **Keimbahn** (gBRCA), **nicht** somatisch (sBRCA/HRD). "
         "FALSE bei reiner Planung/Überweisung ohne erfolgte Beratung oder bei ausschließlich somatischen Angaben."
-
+        "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -462,7 +721,8 @@ FACT_SCHEMA = {
         "EVIDENZ, dass ein HRD-bezogener Tumortest durchgeführt wurde UND ein BEFUND/ERGEBNIS vorliegt "
         "sHRD und sBRCA (1/2) Wert als +/- im Text zu finden. Bloße Testanmeldung/Planung ohne Befund NICHT mitzählen. "
         "TRUE bei dokumentierter Durchführung/Ergebnis; FALSE sonst."
-    ),
+        "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
+        ),
         "producer": ["llm"],
     },
     "ev_neoadjuvant_therapy_done": {
@@ -479,7 +739,8 @@ FACT_SCHEMA = {
             "  • OP-only (keine systemische Gabe vor OP) ist TRUE wenn trotzdem explizit von neoadjuvant geredet wird."
             "(Olaparib/Niraparib) **ohne** expliziten neoadjuvanten Kontext.\n"
             "Hinweis: PARP-Inhibitoren sind i. d. R. Maintenance – **nur** als neoadjuvant zählen, wenn der Text das klar so benennt ('neoadjuvantes Olaparib')."
-          ),
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
+        ),
         "producer": ["llm"],
     },
     "ev_adjuvant_therapy_done": {
@@ -494,6 +755,7 @@ FACT_SCHEMA = {
             "Nur präoperative (ADJUVANTE) Gaben zählen. Ausschlüsse (dann FALSE):\n"
             "  • Neoadjuvant/präoperativ, Erhaltung/Maintenance, Planung/Indikation ohne Gabe.\n"
             "  • Reine PARP-Erhaltung (Olaparib/Niraparib) zählt **nicht** als adjuvant, außer der Text benennt es ausdrücklich als adjuvante Gabe (ungewöhnlich)."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -510,6 +772,7 @@ FACT_SCHEMA = {
         "und/oder dokumentierte Operabilitätsbewertung EXPLIZIT im Kontext 'nach C3'/'Interim/Restaging'. "
         "TRUE, wenn eine dieser Maßnahmen als tatsächlich durchgeführt und zeitlich C3-bezogen dokumentiert ist. "
         "FALSE bei bloßer Planung ('vorgesehen'), ausstehendem Termin oder postoperativem Restaging ohne Bezug zu C3."
+        "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -524,9 +787,11 @@ FACT_SCHEMA = {
         "('Wechsel auf …', 'Komplettierung bis C6'), "
         "TRUE, wenn Wechsel und dokumentierte Fortführung mit real verabreichten zusätzlichen Zyklen vorliegt. "
         "FALSE bei bloßer Absicht/Planung ohne Gabe."
+        "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
     ),
         "producer": ["llm"],
     },
+
     "ev_optimal_debulking_completion_done": {
         "role": "evidence", "type": "bool2",
         "title": "Optimales Debulking + Chemo abgeschlossen",
@@ -543,9 +808,11 @@ FACT_SCHEMA = {
             "• unklar, ob die präoperativen Zyklen tatsächlich vor der OP gegeben wurden. "
             "Beispiele TRUE: 'nach 3× neoadjuvant OP mit R0, anschließend C4–C6 komplettiert', 'Optimales Debulking, Komplementierung abgeschlossen (C4–C6)'. "
             "Beispiele FALSE: 'adjuvante Chemotherapie 6× abgeschlossen', 'OP mit Resttumor, weitere Chemo geplant', 'nur OP, keine Komplementierung', 'Formulierung unklar/ohne Sequenz C1–C3 → OP → C4–C6'."
+            "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
     "producer": ["llm"],
     },
+
     "ev_maintenance_therapy_done": {
         "role": "evidence", "type": "bool2",
         "title": "Erhaltungstherapie durchgeführt",
@@ -554,19 +821,20 @@ FACT_SCHEMA = {
         "(z. B. Niraparib, Bevacizumab, Olaparib oder Kombinationen). "
         "TRUE bei dokumentierter Verabreichung; "
         "FALSE bei reiner Planung/Option ohne tatsächliche Gabe."
-    ),
+        "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
+        ),
         "producer": ["llm"],
     },
     # --- Evaluator-Output  ---
-    # TODO Definitionen eventuell für verbalization
+
     "iota_res": {
         "role": "output", "type": "enum",
-        "allowed": ["benigne_wahrscheinlich","maligne_wahrscheinlich","nicht_klassifizierbar"],
+        "allowed": ["benigne_wahrscheinlich","maligne_wahrscheinlich","unknown"],
         "producer": ["iota_simple_rules"],
     },
     "op_plan": {
         "role": "output", "type": "enum",
-        "allowed": ["no_op","Zystenausschälung","Adnektomie","unknown"], # TODO unknown ?
+        "allowed": ["no_op","Zystenausschälung","Adnektomie"],
         "producer": ["set_op_plan"],
     },
     "figo_bucket": {
@@ -576,6 +844,20 @@ FACT_SCHEMA = {
     },
     "debulking_possible": {
         "role": "output", "type": "bool3",
+        "definition": (
+            "OPERABILITÄT/RESEKTABILITÄT für ein (primäres) zytoreduktives Debulking im fortgeschrittenen Setting "
+            "(Debulking Assessment nach cFIGO advanced). "
+            "Diese Variable steuert im Graphen die OP-Route: "
+            "TRUE → Laparotomie (Debulking-OP anstreben), "
+            "FALSE → Laparoskopie (kein primäres Debulking möglich; i. d. R. diagnostisch/Abklärung → neoadjuvanter Pfad), "
+            "UNKNOWN → Follow-up Resektabilität (weitere Abklärung nötig). "
+            "TRUE wenn explizit dokumentiert ist, dass Debulking/primäre Zytoreduktion möglich/operabel erscheint "
+            "(z. B. 'debulking möglich', 'operabel', 'R0 wahrscheinlich/erreichbar'). "
+            "FALSE wenn explizit dokumentiert ist, dass Debulking nicht möglich/unresectabel/inoperabel ist "
+            "(z. B. 'debulking nicht möglich', 'nicht operabel', 'R0 nicht erreichbar', 'unresectabel', 'palliativ', "
+            "'neoadjuvante Therapie statt primärem Debulking'). "
+            "UNKNOWN wenn keine klare Aussage zur Resektabilität vorliegt oder Angaben widersprüchlich sind. Aber eher immer true oder false als unknown wählen."
+        ),
         "producer": ["set_debulking_possible"],
     },
     "plan_strategy_adjuvant": {
@@ -641,9 +923,9 @@ FACT_SCHEMA = {
         "role": "output", "type": "enum",
         "title": "Plan Strategie (Erhaltung)", "definition": "TBD",
         "allowed": [
-            "bevacolap_olap_bevac_nirap",
-            "bevacolap_bevac_nirap",
-            "bevac_nirap"
+            "bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib",
+            "bevacizumab+olaparib_or_bevacizumab_or_niraparib",
+            "bevacizumab_or_niraparib"
         ],
 
         "producer": ["set_maintenance_therapy"],
