@@ -3,7 +3,6 @@ from .generate_recommendation import get_graph_recommendation
 from .knowledge_graph import KG
 from .evidence_pass import run_evidence_pass
 from .utils import ROOT_STEP
-from .verbalization import verbalize_subgraph_from_anchor
 from ..llm_vertex import init_vertexai_llm, get_json_llm_fn
 
 

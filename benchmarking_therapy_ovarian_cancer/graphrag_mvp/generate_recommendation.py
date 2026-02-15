@@ -40,17 +40,20 @@ def _get_graph_rag_reco_prompt(verbalized: str) -> str:
         ## Aufgabe
         Formuliere eine **konkrete, umsetzbare Empfehlung** (Therapie oder nächster Schritt) **in 1–2 kurzen Sätzen**, basierend auf den Informationen im Subgraphen. 
         Es geht um die Behandlung von (vermutlichem) Eierstockkrebs oder gutartigen Zysten.
-        - **Wenn Blocker/Fakten fehlen: Formuliere aktiv, was zuerst zu erledigen ist** (mit Provider) **und** hänge **konditional** den vorgesehenen Zielschritt an – ohne zu sagen „Entscheidung nicht möglich“.
-        - **Wenn nichts fehlt**: Formuliere direkt den klinischen Schritt (veranlassen/initiieren/überführen).
 
-        ## Stil
-        - Klinisch-kurz, präzise, OHNE Erwähnung des Graphen/der Datenstruktur (zB keine Nennung von provider).
-        - Keine Begründungsabsätze, keine Aufzählungen; maximal 2 Sätze.
+        ### Regeln & Stil (wichtig)
+        - Schreibe im **Tumorboard-Stil**: Klinisch-kurz, präzise, OHNE Erwähnung des Graphen/der Datenstruktur (zB keine Nennung von provider).
+        - **Keine** „Wir“-Form! Keine langen Begründungen, keine Meta-Kommentare (kein Graph, keine „Provider“-Worte).
+        - Nenne **nur** Maßnahmen/Regime, die im Subgraph plausibel als nächster Schritt stehen. Nichts erfinden, kein Off-Label.
+        - Wenn Fakten/Gates fehlen: formuliere **aktiv** „zunächst …, danach …“ und hänge den vorgesehenen Zielschritt **konditional** an (nenne die Werte die notwendig sind für die jeweiligen konditionalen Schritte).
+        - Wenn ein Pfad durch vorhandene Fakten ausgeschlossen ist, **nicht** erwähnen.
+        - **Wenn nichts fehlt**: Formuliere direkt den klinischen Schritt (ohne Verb und ohne prüfen).
+        - Schlage keine Vorstellung im Tumorboard vor, wenn dann nur eine erneute.
         
         ## Sicherheits-Schienen
         - Wenn Informationen widersprüchlich sind: **klar sagen, dass eine Entscheidung aktuell nicht möglich ist**, und **genau** welche fehlenden Informationen/Provider zuerst benötigt werden.
         - Keine Medikamente/Protokolle erfinden; keine Off-Label-Vorschläge.
         
         ## Ausgabeformat (streng)
-        Empfehlung: <ein bis zwei klinische Sätze, siehe Regeln oben>
+        <ein bis zwei klinische Sätze, siehe Regeln oben in kurzem klinischen Tumorboard Stil ohne Wir Form>
         """
