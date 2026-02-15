@@ -12,7 +12,7 @@ definitions: Dict[str, Dict[str, str]] = {
         "Zystenklassifikation (BD-Klassifikation)": "BD-Klassifikation der Zyste zur OP-Planung; liefert BD-Kategorie.",
         "CT Thorax/Abdomen": "Staging-CT; liefert cFIGO-Hinweise und Ausbreitung.",
         "FIGO Bucketer": "Einstufung in ‚early‘ vs ‚advanced‘ anhand cFIGO; leitet nächsten Pfad ab.",
-        "Debulking Assessment": "Operabilität/erreichbares Debulking einschätzen.",
+        "Debulking Assessment": "Operabilität/erreichbares Debulking einschätzen für Bestimmung der Primäroperation.",
         "OP-Entscheider": "OP-Plan festlegen (keine OP/Zystektomie/Adnektomie); liefert OP-Plan.",
         "Verlaufskontrolle": "Kontrolle bei konservativ/benignem Verlauf; entscheidet Beobachtung/Ende.",
         "Zystenausschälung": "Zystektomie durchführen; liefert Histologie (Zystektomie).",
@@ -21,9 +21,9 @@ definitions: Dict[str, Dict[str, str]] = {
         # Resektabilität/Tumorboard
         "Beurteilung Resektabilität im Tumorboard": "Interdisziplinäre Operabilitäts-Einschätzung; liefert Empfehlung zum operativen Vorgehen.",
         "Laparotomie, SS": "Primäre Laparotomie/Debulking/Proben; liefert OP-Befunde.",
-        "Laparotomie, Pathologie Auswertung": "Patho-Befund nach Laparotomie; liefert Grad & pFIGO.",
+        "Laparotomie, Pathologie Auswertung": "Pathologie-Befund nach Laparotomie; liefert Grad & pFIGO.",
         "Laparoskopie oder Minilaparotomie": "Diagnostisch/therapeutische LSK/Minilaparotomie; liefert intraop. Befunde.",
-        "Laparoskopie, Pathologie Auswertung": "Patho-Befund nach LSK; liefert Grad & pFIGO.",
+        "Laparoskopie, Pathologie Auswertung": "Pathologie-Befund nach LSK; liefert Grad & pFIGO.",
         "Interdisziplinäres Tumorboard": "Therapieentscheidung aus allen Befunden; legt Gesamtplan fest.",
 
         # HRD / BRCA

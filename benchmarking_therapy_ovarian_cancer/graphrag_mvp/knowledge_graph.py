@@ -82,6 +82,14 @@ class KG:
         """
         self.run_write(query, pid=pid, name=step_name)
 
+    def mark_failed(self, pid: str, step_name: str) -> None:
+        # mark evaluator as failed for a patient
+        query = """
+        MATCH (p:Patient {pid:$pid}), (s:Step {name:$name})
+        MERGE (p)-[:FAILED {ts:datetime()}]->(s)
+        """
+        self.run_write(query, pid=pid, name=step_name)
+
     def mark_performed(self, pid: str, step_name: str, reason: str = "evidence") -> None:
         q = """
         MATCH (p:Patient {pid:$pid}), (s:Step {name:$name})
@@ -245,9 +253,13 @@ class KG:
             WITH p, s, depth, reachable, requires_ok, is_on_hold,
                 EXISTS { MATCH (p)-[:COMPLETED]->(s) } AS is_completed
             
+            WITH p, s, depth, reachable, requires_ok, is_on_hold, is_completed,
+                EXISTS { MATCH (p)-[:FAILED]->(s) } AS is_failed
+            
             WHERE reachable
               AND requires_ok
               AND NOT is_completed
+              AND (s.kind = 'Evaluator' AND NOT is_failed)
               AND (s.kind = 'Evaluator' OR NOT is_on_hold)
               
               AND NOT EXISTS {
