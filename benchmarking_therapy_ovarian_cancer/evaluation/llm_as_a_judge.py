@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from benchmarking_therapy_ovarian_cancer.prompt_list import judge_prompt
+from benchmarking_therapy_ovarian_cancer.evaluation.judge_prompts import judge_prompt
 
 
 def _prompt(gold: str, cand: str) -> str:
@@ -17,7 +17,18 @@ JUDGE_SCHEMA = {
     },
     "required": ["label", "score", "rationale"],
 }
-
+# TODO
+#  JUDGE_SCHEMA = {
+#     "type": "OBJECT",
+#     "properties": {
+#         "korrektheit": {"type": "INTEGER"},       # 1..5
+#         "vollstaendigkeit": {"type": "INTEGER"},  # 1..5
+#         "verstaendlichkeit": {"type": "INTEGER"}, # 1..5
+#         "folgen": {"type": "INTEGER"},            # 1..5
+#         "rationale": {"type": "STRING"},
+#     },
+#     "required": ["korrektheit", "vollstaendigkeit", "verstaendlichkeit", "folgen", "rationale"],
+# }
 
 def apply_llm_judge_json(
     df: pd.DataFrame,
