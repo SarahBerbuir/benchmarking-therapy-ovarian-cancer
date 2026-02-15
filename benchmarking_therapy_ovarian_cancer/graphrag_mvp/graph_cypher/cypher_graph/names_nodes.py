@@ -19,7 +19,7 @@ names = {
 
     "geneticCounselingGermlineBrca": "Humangenetische Beratung (gBRCA)",
     "tumorHRDTesting": "HRD Testung (sBRCA & sHRD)",
-    "hrcBrcaResolver": "HRD/BRCA Resolver",
+    "hrcBrcaResolver": "HRD/BRCA Testung",
 
     "neoadjuvantTherapyMapping": "Neoadjuvante Therapie Mapping",
     "neoadjuvantTherapy": "Neoadjuvante Therapie",
@@ -57,8 +57,8 @@ names = {
     "routeInterdTbLaparotomy": "Route Interdisziplinäres Tumorboard (Laparotomie)",
     "routeInterdTbLaparoscopy": "Route Interdisziplinäres Tumorboard (Laparoskopie)",
 
-    "routeBrcaHrdResolverHRDTesting": "Route HRD/BRCA Resolver (HRD Testung)",
-    "routeBrcaHrdResolverGermline": "Route HRD/BRCA Resolver (Humangenetische Beratung gBRCA1/2)",
+    "routeBrcaHrdResolverHRDTesting": "Route HRD/BRCA Testung (HRD Testung)",
+    "routeBrcaHrdResolverGermline": "Route HRD/BRCA Testung (Humangenetische Beratung gBRCA1/2)",
 
     "routeOptimalDebulkingComplRestaging": "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Interim Restaging)",
     "routeOptimalDebulkingComplRepeatDebAss": "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Repeated Debulking Assessment)",
