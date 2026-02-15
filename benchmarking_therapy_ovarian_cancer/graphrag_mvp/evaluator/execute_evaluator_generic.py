@@ -72,6 +72,10 @@ def execute_evaluator_generic(
             result = EVAL_DISPATCH[logic](facts, patient_text, llm_json)
         else:
             result = EVAL_DISPATCH[logic](facts)
+        if result == {}:
+            print(f"[eval] evaluator {step_name} returned unknown result. Nothing saved for patient")
+            kg.mark_failed(pid, step_name)
+            return result
         if not isinstance(result, dict): # if node has more then one provide fact relation and function doesn't return dict -> error
             if len(provide_keys) != 1:
                 raise RuntimeError(

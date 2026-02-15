@@ -33,8 +33,8 @@ def iota_simple_rules(facts: Dict[str, Any]) -> dict[str, str]:
     values = [facts.get(k) for k in (B_KEYS + M_KEYS)]
     any_known = any(v is True or v is False for v in values)
 
-    if  not any_known: # not possible
-        iota_res = "nicht_klassifizierbar"
+    if not any_known: # not possible
+        return {}
     elif m >= 1 and b == 0:
         iota_res = "maligne_wahrscheinlich"
     elif m > b:
@@ -43,7 +43,7 @@ def iota_simple_rules(facts: Dict[str, Any]) -> dict[str, str]:
         iota_res = "benigne_wahrscheinlich"
     else:
         # b==0 and m==0, b>=m
-        iota_res = "nicht_klassifizierbar"
+        return {}
 
     print(f"Count benign: {b}, Count malignant: {m}, Iota: {iota_res}")
     return {"iota_res": iota_res}
@@ -116,6 +116,8 @@ def set_debulking_possible(facts: Dict[str, Any], patient_info:str, llm_json: Ca
     key = "debulking_possible"
     debulking_possible = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
     print(f"[evaluator]: Debulking possible: {debulking_possible}")
+    if debulking_possible == "unknown":
+        return {}
     return {"debulking_possible": debulking_possible}
 
 def resolve_path_stage_grade_lsk(facts: Dict[str, Any], patient_info:str, llm_json: Callable[[str, dict], dict]) -> dict[
@@ -128,6 +130,8 @@ def resolve_path_stage_grade_lsk(facts: Dict[str, Any], patient_info:str, llm_js
     key = "figo_path_laparoscopy"
     figo_path_laparoscopy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
     print(f"[evaluator]: grade_laparoscopy: {grade_laparoscopy}, figo_path_laparoscopy: {figo_path_laparoscopy}")
+    if grade_laparoscopy == "unknown" or figo_path_laparoscopy == "unknown":
+        return {}
     return {"grade_laparoscopy": grade_laparoscopy, "figo_path_laparoscopy": figo_path_laparoscopy}
 
 def resolve_path_stage_grade_lap(facts: Dict[str, Any], patient_info:str, llm_json: Callable[[str, dict], dict]) -> dict[
@@ -140,6 +144,8 @@ def resolve_path_stage_grade_lap(facts: Dict[str, Any], patient_info:str, llm_js
     key = "figo_path_laparotomy"
     figo_path_laparotomy = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
     print(f"[evaluator]: grade_laparotomy: {grade_laparotomy}, figo_path_laparotomy: {figo_path_laparotomy}")
+    if grade_laparotomy == "unknown" or figo_path_laparotomy == "unknown":
+        return {}
     return {"grade_laparotomy": grade_laparotomy, "figo_path_laparotomy": figo_path_laparotomy}
 
 
@@ -199,12 +205,12 @@ def get_systematic_therapy_strategy_and_step(facts, type_surgery):
     elif figo in c_group or ((figo == "IA" or figo == "IB") and grade == "high"):
         return f"carboplatin_{cycle_amount}", "Nachsorge"
     elif (figo in FIGO_II) or (
-            figo in FIGO_III and grade == "low"):  # TODO II komplett oder wirklich "II"
-        return f"carboplatin_or_paclitaxel_{cycle_amount}", "Nachsorge"
+            figo in FIGO_III and grade == "low"):
+        return f"carboplatin_and_paclitaxel_{cycle_amount}", "Nachsorge"
     elif figo == "IIIA" and grade == "high":
-        return f"carboplatin_or_paclitaxel_{cycle_amount}", "Erhaltungstherapie"
+        return f"carboplatin_and_paclitaxel_{cycle_amount}", "Erhaltungstherapie"
     elif (figo in FIGO_III or figo in FIGO_IV) and figo != "IIIA" and grade == "high":
-        return f"carboplatin_or_paclitaxel_bevacizumab_{cycle_amount}", "Erhaltungstherapie"
+        return f"carboplatin_and_paclitaxel_and_bevacizumab_{cycle_amount}", "Erhaltungstherapie"
     return "op_only", "Nachsorge"
 
 
@@ -276,29 +282,31 @@ def set_next_step_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
 def set_repeat_debulking_operabel_ass(facts: Dict[str, Any], patient_info: str, llm_json: Callable[[str, dict], dict]) -> \
         dict[str, object]:
     """
-    repeated_debulking_possible: 'true' | 'false' # TODO | 'unknown'
+    repeated_debulking_possible: 'true' | 'false' | 'unknown'
     """
     key = "repeated_debulking_possible"
     repeated_debulking_possible = extract_single_fact_llm(llm_json, key, patient_info)[0][key]
     print(f"[evaluator] repeated_debulking_possible: {repeated_debulking_possible}")
+    if repeated_debulking_possible == "unknown":
+        return {}
     return {"repeated_debulking_possible": repeated_debulking_possible}
 
 def set_maintenance_therapy(facts: Dict[str, Any]) -> Dict[str, Any]:
     """
     Decides concrete maintenance strategy.
-    provides: {"plan_strategy_maintenance": 'bevacolap_olap_bevac_nirap' | 'bevacolap_bevac_nirap' | 'bevac_nirap'}
-    bevacolap_olap_bevac_nirap: Bevacizumab + Olaparip oder Olaparib oder Bevacizumab oder Niraparib
-    bevacolap_bevac_nirap: Bevacizumab + Olaparip oder Bevacizumab oder Niraparib
-    bevac_nirap: Bevacizumab oder Niraparib
+    provides: {"plan_strategy_maintenance": 'bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib' | 'bevacolaparib_or_bevacizumab_or_niraparib' | 'bevacizumab_or_niraparib'}
+    bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib: Bevacizumab + Olaparip oder Olaparib oder Bevacizumab oder Niraparib
+    bevacizumab+olaparib_or_bevacizumab_or_niraparib: Bevacizumab + Olaparip oder Bevacizumab oder Niraparib
+    bevacizumab_or_niraparib: Bevacizumab oder Niraparib
     """
     brca = facts.get("brca_status")
     hrd = facts.get("hrd_status")
 
     if brca == "+" and hrd == "+":
-        plan_strategy_maintenance = "bevacolap_olap_bevac_nirap"
+        plan_strategy_maintenance = "bevacizumab+olaparib_or_olaparib_or_bevacizumab_or_niraparib"
     elif brca == "-" and hrd == "+":
-        plan_strategy_maintenance = "bevacolap_bevac_nirap"
+        plan_strategy_maintenance = "bevacizumab+olaparib_or_bevacizumab_or_niraparib"
     else: # hrd == "-"
-        plan_strategy_maintenance = 'bevac_nirap'
+        plan_strategy_maintenance = 'bevacizumab_or_niraparib'
     print(f"[evaluator] plan_strategy_maintenance: {plan_strategy_maintenance}")
     return {"plan_strategy_maintenance": plan_strategy_maintenance}
