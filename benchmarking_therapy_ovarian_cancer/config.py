@@ -58,11 +58,12 @@ def metric_col(metric: EvaluationMetrics, strategy: LlmStrategy, suffix: str | N
 
 
 # Column names
-gold_standard_col = "Original Tumorboard-Empfehlung"
+gold_standard_col = "Änderung Tumorboard-Empfehlung"
 
 # Data paths
-RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "2026-02-09_Raw_Deutsch_OV.xlsx"
-OUTPUT_DATA_PATH = BASE_DIR / "data" / "processed" / "Raw_Deutsch_OV_wLLM5.xlsx"
+RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "2026-02-09 Raw_Deutsch_OV_TB-Empfehlung_geändert.xlsx"
+RECOMMENDATION_DATA_PATH = BASE_DIR / "data" / "raw" / "Studienaufbau.xlsx"
+OUTPUT_DATA_PATH = BASE_DIR / "data" / "processed" / "Auswertung_final.xlsx"
 GUIDELINE_DATA_PATH = BASE_DIR / "data" / "raw" / "LL_Ovarialkarzinom_Langversion_6.0.pdf"
 CREDENTIALS_NEO4J = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/credentials_neo4j.json"
 CREATE_NODES = BASE_DIR / "benchmarking_therapy_ovarian_cancer/graphrag_mvp/graph_cypher/cypher_graph/01_create_names.cypher"
@@ -81,7 +82,7 @@ EMBEDDING_MODEL_NAME = "pritamdeka/BioBERT-mnli-snli-scinli-scitail-mednli-stsb"
 
 
 generation_config = GenerationConfig(
-    temperature=0.4,
+    temperature=0.2,
     top_p=0.8,
     top_k=40,
     max_output_tokens=2048,
