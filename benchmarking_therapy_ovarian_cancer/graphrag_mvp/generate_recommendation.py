@@ -1,5 +1,5 @@
 from benchmarking_therapy_ovarian_cancer import config
-from benchmarking_therapy_ovarian_cancer.graphrag_mvp.verbalization import verbalize_subgraph_from_anchor
+from benchmarking_therapy_ovarian_cancer.graphrag_mvp.verbalization_improved import verbalize_subgraph_from_anchor
 from benchmarking_therapy_ovarian_cancer.llm_vertex import init_vertexai_llm, get_text_llm_fn
 
 
@@ -45,9 +45,9 @@ def _get_graph_rag_reco_prompt(verbalized: str) -> str:
         - Schreibe im **Tumorboard-Stil**: Klinisch-kurz, präzise, OHNE Erwähnung des Graphen/der Datenstruktur (zB keine Nennung von provider).
         - **Keine** „Wir“-Form! Keine langen Begründungen, keine Meta-Kommentare (kein Graph, keine „Provider“-Worte).
         - Nenne **nur** Maßnahmen/Regime, die im Subgraph plausibel als nächster Schritt stehen. Nichts erfinden, kein Off-Label.
-        - Wenn Fakten/Gates fehlen: formuliere **aktiv** „zunächst …, danach …“ und hänge den vorgesehenen Zielschritt **konditional** an (nenne die Werte die notwendig sind für die jeweiligen konditionalen Schritte).
+        - Wenn Fakten/Gates fehlen: formuliere **aktiv** "Veranlassen ... Durchführen ..." und hänge den vorgesehenen Zielschritt **konditional** an (nenne die Werte die notwendig sind für die jeweiligen konditionalen Schritte).
         - Wenn ein Pfad durch vorhandene Fakten ausgeschlossen ist, **nicht** erwähnen.
-        - **Wenn nichts fehlt**: Formuliere direkt den klinischen Schritt (ohne Verb und ohne prüfen).
+        - **Wenn nichts fehlt**: Formuliere direkt den klinischen Schritt (ohne Verb und ohne prüfen, verwende NOMINALSTIL z.B. "Durchführung von ...").
         - Schlage keine Vorstellung im Tumorboard vor, wenn dann nur eine erneute.
         
         ## Sicherheits-Schienen
