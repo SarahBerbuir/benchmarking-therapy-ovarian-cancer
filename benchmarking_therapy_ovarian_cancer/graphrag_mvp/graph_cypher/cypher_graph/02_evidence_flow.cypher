@@ -107,11 +107,11 @@ UNWIND [
   // Humangenetische Beratung
   [names.geneticCounselingGermlineBrca, names.tumorHRDTesting],
   [names.tumorHRDTesting, names.routeBrcaHrdResolverHRDTesting],
-  [names.routeBrcaHrdResolverHRDTesting, names.hrcBrcaResolver],
+  [names.routeBrcaHrdResolverHRDTesting, names.hrdBrcaResolver],
   [names.geneticCounselingGermlineBrca, names.routeBrcaHrdResolverGermline],
-  [names.routeBrcaHrdResolverGermline, names.hrcBrcaResolver],
+  [names.routeBrcaHrdResolverGermline, names.hrdBrcaResolver],
 
-  [names.hrcBrcaResolver, names.parallelJoin],
+  [names.hrdBrcaResolver, names.parallelJoin],
 
   // Adjuvante Therapie
   [names.interdTb, names.adjuvantTherapyMapping],
