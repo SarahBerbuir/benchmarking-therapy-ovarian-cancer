@@ -34,6 +34,8 @@ def iota_simple_rules(facts: Dict[str, Any]) -> dict[str, str]:
     any_known = any(v is True or v is False for v in values)
 
     if not any_known: # not possible
+        print(f"Nothing known")
+
         return {}
     elif m >= 1 and b == 0:
         iota_res = "maligne_wahrscheinlich"
@@ -43,7 +45,10 @@ def iota_simple_rules(facts: Dict[str, Any]) -> dict[str, str]:
         iota_res = "benigne_wahrscheinlich"
     else:
         # b==0 and m==0, b>=m
-        return {}
+        iota_res = "benigne_wahrscheinlich" # "maligne_wahrscheinlich"
+        print(f"Count benign: {b}, Count malignant: {m}, Failed")
+
+        #return {}
 
     print(f"Count benign: {b}, Count malignant: {m}, Iota: {iota_res}")
     return {"iota_res": iota_res}
@@ -77,7 +82,7 @@ def set_op_plan(facts: Dict[str, Any]) -> dict[str, str]:
     cyst_bd = facts.get("cyst_bd")
 
     praemenopausal_clues = (symptoms_present or growth or persistence or size_cm>=5 or cyst_bd in ["BD1", "BD2"])
-    menopausal_clues = (complex_multiloculaer or psychic_unsure or growth or persistence or ca125_u_ml>=35)
+    menopausal_clues = (complex_multiloculaer or psychic_unsure or growth or size_cm>=5 or persistence or ca125_u_ml>=35)
     if praemenopausal and praemenopausal_clues:
         op_plan = "Zystenausschälung"
     elif praemenopausal and not praemenopausal_clues:
