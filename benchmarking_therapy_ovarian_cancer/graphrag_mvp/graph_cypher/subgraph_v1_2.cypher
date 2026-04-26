@@ -33,7 +33,7 @@ CALL (names) {
   MERGE (stepRouteAdnexectomyCFigo:Step:Evaluator:Routing {name:"Route Adnektomie (cFIGO early)"})
     ON CREATE SET stepRouteAdnexectomyCFigo.kind="Evaluator", stepRouteAdnexectomyCFigo.logic="set_route_flag"
   MERGE (stepAdnexectomy:Step:Therapy {name:names.adnexectomy})     ON CREATE SET stepAdnexectomy.kind = "Therapy"
-  MERGE (stepRouteFollowUpAdnex:Step:Evaluator:Routing {name:"Route Verlaufskontrolle (Histologie Adnektomie)"})
+  MERGE (stepRouteFollowUpAdnex:Step:Evaluator:Routing {name:"Route Verlaufskontrolle (Histologie Adnektomie benigne)"})
     ON CREATE SET stepRouteFollowUpAdnex.kind="Evaluator", stepRouteFollowUpAdnex.logic="set_route_flag"
   MERGE (stepFollowUp:Step:Info {name:names.followUp})              ON CREATE SET stepFollowUp.kind = "Info"
 

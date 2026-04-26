@@ -12,23 +12,24 @@ logging.basicConfig(
 )
 
 pid = "PDEMO1"
-patient_text = """ 
-Anlass des heutigen Tumorboards:
-Überweisung vom Facharzt bei V.a. Ovarialkarzinom und auffälligem Ovarialbefund
-Bildgebung:
-CT: 2 größere Zysten, eine 6 cm messend. Die Andere 3,2 cm messend. Sediment am Boden hyperintens, erscheinen wie zwei mehrzeitig eingeblutete Ovarialzysten DD Endometriome, daneben reaktive KM-Aufnahmen. 
-Gyn. Befund:
-Spec: Portio und äußeres Genitale unauffällig.
-VU: Scheidenwände glatt, kein Portioschiebe- oder Lüftungschmerz. Sono: großer solider Tumor. Reichlich Aszites. V. a. peritonealen Befall.
-Labor: CEA und CA125 noch ausstehend
-Anamnese:
-0G/0P, Menstruation regelmäßig, PAP-Abstrich unauffällig, Voroperation: LSK mit Adnektomie bei Stieldrehung rechts, partielle Thyreoidektomie, sonst keine Vorerkrankungen, keine Allergien. 
-Aktuell: Druck im Unterbauch links seit 6 Monaten. Im extern durchgeführten MRT zeigt sich der V.a. ein Ovarialkarzinom. Es besteht Gewichtsverlust von 8 kg in 8 Monaten. Sonst keine Auffälligkeiten. 
-"""
+# patient_text = """
+# Anlass des heutigen Tumorboards:
+# Überweisung vom Facharzt bei V.a. Ovarialkarzinom und auffälligem Ovarialbefund
+# Bildgebung:
+# CT: 2 größere Zysten, eine 6 cm messend. Die Andere 3,2 cm messend. Sediment am Boden hyperintens, erscheinen wie zwei mehrzeitig eingeblutete Ovarialzysten DD Endometriome, daneben reaktive KM-Aufnahmen.
+# Gyn. Befund:
+# Spec: Portio und äußeres Genitale unauffällig.
+# VU: Scheidenwände glatt, kein Portioschiebe- oder Lüftungschmerz. Sono: großer solider Tumor. Reichlich Aszites. V. a. peritonealen Befall.
+# Labor: CEA und CA125 noch ausstehend
+# Anamnese:
+# 0G/0P, Menstruation regelmäßig, PAP-Abstrich unauffällig, Voroperation: LSK mit Adnektomie bei Stieldrehung rechts, partielle Thyreoidektomie, sonst keine Vorerkrankungen, keine Allergien.
+# Aktuell: Druck im Unterbauch links seit 6 Monaten. Im extern durchgeführten MRT zeigt sich der V.a. ein Ovarialkarzinom. Es besteht Gewichtsverlust von 8 kg in 8 Monaten. Sonst keine Auffälligkeiten.
+# """
+patient_text = "CT Thorax/Abdomen vorliegend, klinisch FIGO IIIA. Laparoskopie mit anschließender Laparotomie stadienadaptiertes Tumordebulking makroskopisch tumorfrei operiert, Histologie seröses high grade Ovarialkarzinom, FIGO pathologisch IIIB."
 
 kg = rebuild_graph()
 res = run_inference(kg, pid, patient_text)
-
+#mit histo mit figo stadium
 # Testfälle
 # "High-grade seröses Karzinom des Corpus uteri (ED 01/23) pT3b pNX pM1 (PER) G3 R1 (klinisch R2) L1 V1 Pn0 FIGO IVB MMRp/MSS und p53-abn"
 # "Laparotomie erfolgreich und histologie maligne. high grade"
@@ -46,7 +47,7 @@ res = run_inference(kg, pid, patient_text)
 # "Keine Sonographie. Kein CT. Keine OP. Keine Verlaufskontrolle."
 # "Laparotomie mit low grade Ovarialkarzinom FIGO III"+
 # "CT Thorax/Abdomen vorliegend, klinisch FIGO IIIA. Laparoskopie mit anschließender Laparotomie, Histologie maligne, Grading high, FIGO pathologisch IIIB. Adjuvante Systemtherapie (Carboplatin 6×) komplett verabreicht; kein Protokollwechsel. Aktuell Nachsorge geplant."
-#  "CT Thorax/Abdomen vorliegend, klinisch FIGO IIIA. gBRCA +. Laparoskopie mit anschließender Laparotomie, Histologie maligne, Grading high, FIGO pathologisch IIIB. Adjuvante Systemtherapie (Carboplatin 6×) komplett verabreicht; kein Protokollwechsel. Aktuell Nachsorge geplant."
+#  "CT Thorax/Abdomen vorliegend, klinisch FIGO IIIA. (gBRCA+). (Laparoskopie mit anschließender) Laparotomie stadienadaptiertes Tumordebulking makroskopisch tumorfrei operiert, Histologie seröses high grade Ovarialkarzinom, FIGO pathologisch IIIB. " #Adjuvante Systemtherapie (Carboplatin 6×) komplett verabreicht; kein Protokollwechsel. Aktuell Nachsorge geplant."
 # """
 # Gyn. Befund:
 # Spec: Portio und äußeres Genitale unauffällig.

@@ -18,31 +18,29 @@ from typing import Dict
 from benchmarking_therapy_ovarian_cancer.llm_vertex import init_vertexai_llm, get_json_llm_fn
 
 SYSTEM_MSG = (
-    "Du bist Fachärzt:in für Gynäkologische Onkologie in einem interdisziplinären Tumorboard. "
-    "Deine Aufgabe ist eine BINÄRE Einstufung für die Zielentität 'Ovarialkarzinom': "
-    "'Diagnose' ODER 'Verdacht'. Arbeite streng evidenzbasiert (Pathologie/Histologie > klinische Impression > Bildgebung). "
-    "Antworte ausschließlich als JSON."
+    "Du bist Fachärzt:in für Gynäkologische Onkologie im interdisziplinären Tumorboard. "
+    "Aufgabe: klassifiziere den Status der Zielentität 'Ovarialkarzinom' strikt binär als "
+    "'Diagnose' oder 'Verdacht'.Arbeite streng evidenzbasiert. "
+    "Bei unklarer/fehlender Evidenz: 'Verdacht'. Antworte ausschließlich als JSON."
 )
-
 
 RULES = (
-    "Evidenz-Priorität (höchste Regel zuerst):\n"
-    "1) **Diagnose** bei gesichertem Befund in Text ODER Pathologie/Histologie, z. B.:\n"
-    "   • explizite Nennung 'Ovarialkarzinom' ODER typische Ovar-Histologien (HGSC/LGSC, endometrioid, klarzellig, muzinös),\n"
-    "   • **Ovarialer Borderline-Tumor (z. B. muzinöser/seröser Borderline-Tumor) gilt als gesicherte Diagnose**,\n"
-    "   • Formulierungen wie 'Biopsie bestätigt' / 'histologisch gesichert/vereinbar mit', FIGO-Stadium, \n"
-    "   •  organisatorische Marker wie 'Zweitmeinung', 'postoperative Vorstellung'\n"
-    "2) **Verdacht** bei Unsicherheit/Vorläufigkeit: 'Verdacht auf', 'V. a.', 'suspekt', 'Hinweis auf', 'fraglich', 'am ehesten'.\n"
-    "3) Wenn in der Histologie Unsicherheitsbegriffe ('am ehesten', 'fraglich') stehen **ohne** harte Bestätigung aus (1), dann 'Verdacht'.\n"
-    "4) Bildgebung allein (CT/MRT/US/PET-CT) genügt nicht für 'Diagnose' – ohne Bestätigung → 'Verdacht'.\n"
-    "5) Entscheide strikt BINÄR. Bei unzureichender Evidenz konservativ 'Verdacht'. Paraphrasen/Synonyme erkennen."
-)
-USER_TEMPLATE = (
-    "Bestimme **nur** für 'Ovarialkarzinom' den Status. Gib **ausschließlich** folgendes JSON zurück (keine weiteren Worte):\n"
-    "{{\"label\": \"Diagnose|Verdacht\", \"rationale\": \"kurze Begründung\", \"evidence_spans\": [\"wörtliche Textausschnitte\"]}}"
-    "\n\nPatientin (alle Spalten als 'Name: Wert', semikolon-getrennt):\n{patient_block}\n"
+    "Regeln (in Reihenfolge):\n"
+    "1) Label = 'Diagnose' bei gesichertem Befund im Text, v. a. Pathologie/Histologie "
+    "(z. B. 'histologisch gesichert', 'Biopsie bestätigt', FIGO-Stadium, postoperative Vorstellung/Zweitmeinung). "
+    "Typische Ovar-Histologien zählen als Diagnose (HGSC/LGSC, endometrioid, klarzellig, muzinös). "
+    "Borderline-Tumor (serös/muzinös) gilt als Diagnose.\n"
+    "2) Label = 'Verdacht' bei Unsicherheits-/Vorläufigkeitsmarkern (z. B. 'V. a.', 'Verdacht auf', "
+    "'suspekt', 'Hinweis auf', 'fraglich', 'am ehesten').\n"
+    "3) Wenn Histologie nur unsicher formuliert ist und keine harte Bestätigung aus (1) vorliegt: 'Verdacht'.\n"
+    "4) Bildgebung allein (CT/MRT/US/PET-CT) reicht nicht für 'Diagnose'  ohne Bestätigung → 'Verdacht'.\n"
 )
 
+USER_TEMPLATE = (
+    "Bestimme **nur** für 'Ovarialkarzinom' den Status. Gib **ausschließlich** folgendes JSON zurück (keine weiteren Worte):\n"
+    "{{\"label\": \"Diagnose|Verdacht\"}}"
+    "\n\nPatientin (alle Spalten als 'Name: Wert', semikolon-getrennt):\n{patient_block}\n"
+)
 
 ONCO_SCHEMA: Dict = {
     "type": "OBJECT",
@@ -57,9 +55,12 @@ ONCO_SCHEMA: Dict = {
 def make_patient_block(row: pd.Series) -> str:
     """ Concatenate patient blocks if not in excluded columns"""
     exclude_cols = {
+        "Patientin-ID",
         "Original Tumorboard-Empfehlung",
-        "Referenz Goldstandard",
+        "Änderung Tumorboard-Empfehlung",
+        # "Referenz Goldstandard",
         "Kommentar",
+        "Status"
     }
     exclude_lower = {c.lower() for c in exclude_cols}
 
@@ -83,18 +84,6 @@ def generate_oncology_prompt(row: pd.Series) -> str:
 
 def classify_oncology_status(df):
     df_out, sys_msg, rules_text, user_tmpl = evaluate_oncology_status(df)
-    # TODO
-    # metrics = evaluate_oncology_binary(df_out)
-    # print(f"Metrics classification oncology status: {metrics}")
-    # save_run_json(
-    #     metrics=metrics,
-    #     system_msg=sys_msg,
-    #     rules_text=rules_text,
-    #     user_template=user_tmpl,
-    #     model_name=config.LLM_MODEL_NAME,
-    #     n_cases=len(df_out),
-    #     out_path="runs/oncology_runs.json",
-    # )
     return df_out
 
 def evaluate_oncology_status(
@@ -115,15 +104,15 @@ def evaluate_oncology_status(
         spans_list.append(spans if isinstance(spans, list) else [str(spans)])
     out_df = df.copy()
     out_df["oncology_status"] = labels
-    out_df["oncology_rationale"] = rationales
-    out_df["oncology_evidence_spans"] = [" ; ".join(s) if s else "" for s in spans_list]
+    #out_df["oncology_rationale"] = rationales
+    #out_df["oncology_evidence_spans"] = [" ; ".join(s) if s else "" for s in spans_list]
 
     return out_df, SYSTEM_MSG, RULES, USER_TEMPLATE
 
 
 def evaluate_oncology_binary(
     df: pd.DataFrame,
-    y_true_col: str = "Referenz Goldstandard",
+    y_true_col: str = "Status",
     y_pred_col: str = "oncology_status",
     positive_label: str = "Diagnose",
 ) -> Dict[str, Any]:

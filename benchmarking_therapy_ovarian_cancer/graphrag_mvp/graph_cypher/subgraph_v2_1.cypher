@@ -25,8 +25,8 @@ WITH {
   adjuvantTherapy: "Adjuvante Therapie",
   nextStepMappingAdj: "Next Step Mapping Adjuvant",
   interimRestagingCycle3: "Reevaluation nach 3 Zyklen, CT Thorax Abdomen, CA125, Operapabilität Assessment",
-  chemoProtocolSwitchAndCompletion: "Wechsel Therapieprotokoll & Komplementtierung Chemotherapie (3x)",
-  optimalDebulkingAndChemoCompletion: "Optimales Debulking & Komplementtierung Chemotherapie (3x)",
+  chemoProtocolSwitchAndCompletion: "Wechsel Therapieprotokoll & Komplettierung Chemotherapie (3x)",
+  optimalDebulkingAndChemoCompletion: "Optimales Debulking & Komplettierung Chemotherapie (3x)",
   repeatDebulkingAssessment: "Wiederholung Debulking Assessment",
   therapyReevaluation: "Therapie Reevaluation",
   parallelJoin: "Parallel Join",
@@ -50,7 +50,7 @@ CALL (names) {
   MERGE (stepRouteAdnexectomyOpPlan:Step:Evaluator:Routing {name:"Route Adnektomie (op_plan Adnexectomy)"})
     ON CREATE SET stepRouteAdnexectomyOpPlan.kind="Evaluator", stepRouteAdnexectomyOpPlan.logic="set_route_flag"
   MERGE (stepAdnexectomy:Step:Therapy {name:names.adnexectomy})     ON CREATE SET stepAdnexectomy.kind = "Therapy"
-  MERGE (stepRouteFollowUpAdnex:Step:Evaluator:Routing {name:"Route Verlaufskontrolle (Histologie Adnektomie)"})
+  MERGE (stepRouteFollowUpAdnex:Step:Evaluator:Routing {name:"Route Verlaufskontrolle (Histologie Adnektomie benigne)"})
     ON CREATE SET stepRouteFollowUpAdnex.kind="Evaluator", stepRouteFollowUpAdnex.logic="set_route_flag"
   MERGE (stepFollowUp:Step:Info {name:names.followUp})              ON CREATE SET stepFollowUp.kind = "Info"
 
@@ -60,11 +60,11 @@ CALL (names) {
     ON CREATE SET stepRouteAdnexectomyCFigo.kind="Evaluator", stepRouteAdnexectomyCFigo.logic="set_route_flag"
 
   MERGE (stepDebulkingAss:Step:Evaluator {name:names.debulkingAss}) ON CREATE SET stepDebulkingAss.kind = "Evaluator", stepDebulkingAss.logic = "set_debulking_possible"
-  MERGE (stepRouteDebulkingAssFIGOBucket:Step:Evaluator:Routing {name:"Route Debulking Assessment (FIGO Bucket)"})
+  MERGE (stepRouteDebulkingAssFIGOBucket:Step:Evaluator:Routing {name:"Route Debulking Assessment (FIGO Bucket advanced)"})
     ON CREATE SET stepRouteDebulkingAssFIGOBucket.kind="Evaluator", stepRouteDebulkingAssFIGOBucket.logic="set_route_flag"
-  MERGE (stepRouteDebulkingAssCystectomy:Step:Evaluator:Routing {name:"Route Debulking Assessment (Zystenausschälung)"})
+  MERGE (stepRouteDebulkingAssCystectomy:Step:Evaluator:Routing {name:"Route Debulking Assessment (Histologie Zystenausschälung maligne)"})
     ON CREATE SET stepRouteDebulkingAssCystectomy.kind="Evaluator", stepRouteDebulkingAssCystectomy.logic="set_route_flag"
-  MERGE (stepRouteDebulkingAssAdnexectomy:Step:Evaluator:Routing {name:"Route Debulking Assessment (Adnektomie)"})
+  MERGE (stepRouteDebulkingAssAdnexectomy:Step:Evaluator:Routing {name:"Route Debulking Assessment (Histologie Adnektomie maligne)"})
     ON CREATE SET stepRouteDebulkingAssAdnexectomy.kind="Evaluator", stepRouteDebulkingAssAdnexectomy.logic="set_route_flag"
   MERGE (stepFollowUpResectability:Step:Info {name:names.resectabilityEval})  ON CREATE SET stepFollowUpResectability.kind = "Info"
 
@@ -82,7 +82,7 @@ CALL (names) {
 
   MERGE (stepGeneticCounselingGermlineBRCA:Step:Diagnostic {name:names.geneticCounselingGermlineBrca}) ON CREATE SET stepGeneticCounselingGermlineBRCA.kind = "Diagnostic"
   MERGE (stepTumorHRDTesting:Step:Diagnostic {name:names.tumorHRDTesting}) ON CREATE SET stepTumorHRDTesting.kind = "Diagnostic"
-  MERGE (stepBrcaHrdResolver:Step:Evaluator {name:"HRD/BRCA Resolver"})
+  MERGE (stepBrcaHrdResolver:Step:Evaluator {name:"HRD/BRCA Testung"})
     ON CREATE SET stepBrcaHrdResolver.kind="Evaluator", stepBrcaHrdResolver.logic="set_hrd_brca_status"
 
   MERGE (stepParallelJoin:Step:Evaluator {name:names.parallelJoin})
@@ -103,9 +103,9 @@ CALL (names) {
     ON CREATE SET stepRepeatDebulkingAssessment.kind="Evaluator", stepRepeatDebulkingAssessment.logic="set_interim_restaging_operabel_ass"
   MERGE (stepTherapyReevaluation:Step:Info {name:names.therapyReevaluation})  ON CREATE SET stepTherapyReevaluation.kind = "Info"
 
-  MERGE (stepRouteOptimalDebulkingComplRestaging:Step:Evaluator:Routing {name:"Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Interim Restaging)"})
+  MERGE (stepRouteOptimalDebulkingComplRestaging:Step:Evaluator:Routing {name:"Route Optimales Debulking & Komplettierung Chemotherapie (3x) (Interim Restaging)"})
     ON CREATE SET stepRouteOptimalDebulkingComplRestaging.kind="Evaluator", stepRouteOptimalDebulkingComplRestaging.logic="set_route_flag"
-  MERGE (stepRouteOptimalDebulkingComplRepeatDebAss:Step:Evaluator:Routing {name:"Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Repeated Debulking Assessment)"})
+  MERGE (stepRouteOptimalDebulkingComplRepeatDebAss:Step:Evaluator:Routing {name:"Route Optimales Debulking & Komplettierung Chemotherapie (3x) (Repeated Debulking Assessment)"})
     ON CREATE SET stepRouteOptimalDebulkingComplRepeatDebAss.kind="Evaluator", stepRouteOptimalDebulkingComplRepeatDebAss.logic="set_route_flag"
   MERGE (stepOptimalDebulkingChemoCompl:Step:Therapy {name:names.optimalDebulkingAndChemoCompletion})       ON CREATE SET stepOptimalDebulkingChemoCompl.kind = "Therapy"
   MERGE (stepRouteSystemDoneNeoadj:Step:Evaluator:Routing {name:"Route Systemtherapie Done (Neoaduvant)"})

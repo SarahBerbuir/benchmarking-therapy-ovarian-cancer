@@ -48,7 +48,7 @@ FACT_SCHEMA = {
     "M2_ascites": {
         "role": "input", "type": "bool3",
         "title": "Aszites",
-        "definition": "Freie Flüssigkeit/Aszites über physiologische Mengen hinaus. Gemessen bei Sonografie. TRUE bei Nennung; FALSE bei expliziter Verneinung; UNKNOWN wenn nicht erwähnt.",
+        "definition": "Freie Flüssigkeit/Aszites über physiologische Mengen hinaus (auch bei etwas). Gemessen bei Sonografie. TRUE bei Nennung; FALSE bei expliziter Verneinung; UNKNOWN wenn nicht erwähnt.",
         "pos_examples": ["Aszites vorhanden", "moderater Aszites", "free fluid/ascites"],
         "neg_examples": ["kein Aszites", "kein Nachweis von Aszites", "no ascites"],
         "producer": ["llm"],
@@ -81,7 +81,7 @@ FACT_SCHEMA = {
     "symptoms_present": {
         "role": "input", "type": "bool2",
         "title": "Symptome vorhanden",
-        "definition": "Beschwerden im Zusammenhang mit der Adnexläsion (z. B. Unterbauchschmerz, Druckgefühl, Blähbauch, Blutungsstörung, akutes Abdomen). TRUE bei dokumentierten Symptomen; FALSE wenn explizit asymptomatisch oder keine Hinweise",
+        "definition": "Beschwerden (z. B. Unterbauchschmerz, Druckgefühl vorhanden, Blähbauch, Blutungsstörung, akutes Abdomen). TRUE bei dokumentierten Symptomen; FALSE wenn explizit asymptomatisch oder keine Hinweise",
         "producer": ["llm"],
     },
     "growth": {
@@ -110,7 +110,7 @@ FACT_SCHEMA = {
     },
     "ca125_u_ml": {
         "role": "input", "type": "number",
-        "title": "CA125 (U/ml)",
+        "title": "CA125 (U/ml)", # Ab 35 auffällig
         "definition": "Numerischer CA-125-Wert (U/ml), möglichst prätherapeutisch und am Entscheidungszeitpunkt. Bei mehreren Werten den aktuellsten vor Therapie wählen. Wenn kein Wert dokumentiert: -1.",
         "pos_examples": ["CA-125 38", "Ca125: 8,1"],
         "neg_examples": ["kein CA-125 bestimmt"],
@@ -132,7 +132,6 @@ FACT_SCHEMA = {
             "\n"
             "GRUNDREGELN:\n"
             "• Nutze Text-Evidenz aus der Bildgebung/Sonographie (keine Vermutungen).\n"
-            "• Wenn notwendige Merkmale nicht klar genannt sind → 'unknown'.\n"
             "• Wenn mehrere Kategorien passen würden, nutze diese PRIORITÄT (spezifisch vor allgemein): BD2 > BD1 > BD4 > BD3.\n" # TODO
             "\n"
             "BD1 (Endometriom/Endometriosezyste):\n"
@@ -435,7 +434,7 @@ FACT_SCHEMA = {
             "Ausgabe: '+' bei pathogen/likely pathogenic; '-' bei negativ/wildtyp/VUS; "
             "'unknown' wenn kein Keimbahn-Befund erkennbar."
         ),
-        "definition": "Keimbahn-BRCA1/2-Ergebnis oder aucg gBRCA genannt: '+' bei pathogen/likely pathogenic; '-' bei negativ oder VUS ohne klare Pathogenität.",
+        # "definition": "Keimbahn-BRCA1/2-Ergebnis oder auch gBRCA genannt: '+' bei pathogen/likely pathogenic; '-' bei negativ oder VUS ohne klare Pathogenität.",
         "allowed": ["+", "-", "unknown"],
         "producer": ["llm"],
     },
@@ -460,7 +459,7 @@ FACT_SCHEMA = {
             "EXTRAHIERE NUR ADJUVANT TATSÄCHLICH VERABREICHTE REGIME (nicht geplant/erwogen). Nach einer Laparotomie. "
             "Ordne anhand der im Text dokumentierten Gaben zu. Hinweise wie 'erhielt', 'gab', "
             "'Zyklus', 'C1/2/3', 'Therapie begonnen/fortgeführt' zählen als Verabreichung. "
-            "Nur präoperative (adjuvante) Gaben berücksichtigen; neoadjuvante oder Erhaltungshinweise ignorieren. "
+            "Nur postoperative (adjuvante) Gaben berücksichtigen; neoadjuvante oder Erhaltungshinweise ignorieren. "
             "Suffix '_6x' bezeichnet die typische 6-Zyklen-ADJUVANZ; die exakte Zykluszahl muss im Text NICHT stehen. "
               "Synonyme/Notation: 'Carboplatin/Paclitaxel', 'Carbo+Ptx', 'Carboplatin & Paclitaxel' → beide gemeinsam; "
               "'… und Bevacizumab' kennzeichnet zusätzliches Bevacizumab.\n"
@@ -540,7 +539,7 @@ FACT_SCHEMA = {
             "NACH zusätzlicher Systemtherapie im neoadjuvanten Verlauf – d. h. nachdem initial Debulking NICHT möglich war "
             "und nach der C3-Interim-Reevaluation eine weitere/komplementierende Systemtherapie (ggf. Protokollwechsel + "
             "Komplettierung bis typischerweise C4–C6) erfolgt ist. "
-            "Im Graphen steuert dies: TRUE → Route zum optimalen Debulking + Chemo-Komplementierung, "
+            "Im Graphen steuert dies: TRUE → Route zum optimalen Debulking + Chemo-Komplettierung, "
             "FALSE → Therapie Reevaluation (kein Debulking möglich → Gesamtstrategie neu bewerten), "
             "UNKNOWN → keine belastbare erneute Aussage dokumentiert. "
             "TRUE nur wenn explizit dokumentiert ist, dass nach der zusätzlichen Therapie jetzt (wieder) operabel/debulkingfähig "
@@ -577,22 +576,22 @@ FACT_SCHEMA = {
     "optimal_debulking_completion": {
         "role": "fact", "type": "enum",
         "allowed": [True, "unknown"],
-        "title": "Optimales Debulking (R0) + postoperative Chemo-Komplementierung abgeschlossen",
+        "title": "Optimales Debulking (R0) + postoperative Chemo-Komplettierung abgeschlossen",
         "definition": (
             "FAKT (neoadjuvantes Setting): Prüfe, ob eine Sequenz 'C1–C3 neoadjuvant → OP → C4–C6' "
             "oder äquivalent eindeutig dokumentiert ist UND die OP als optimales Debulking/R0/complete macroscopic cytoreduction "
-            "beschrieben wird UND die postoperative Chemo-Komplementierung tatsächlich abgeschlossen wurde.\n\n"
+            "beschrieben wird UND die postoperative Chemo-Komplettierung tatsächlich abgeschlossen wurde.\n\n"
             "True nur wenn ALLE Punkte explizit belegt sind:\n"
             "1) Neoadjuvante Zyklen vor OP (z.B. '3× neoadjuvant', 'C1–C3 vor OP').\n"
             "2) OP mit optimalem Debulking (z.B. 'R0', 'optimales Debulking', 'complete cytoreduction'). Achte darauf kein basic Debulking vor Primärtherapie aufzunehmen.\n"
-            "3) Postoperative Komplementierung/Komplettierung der Chemo (z.B. 'C4–C6 gegeben/komplettiert', "
+            "3) Postoperative Komplettierung/Komplettierung der Chemo (z.B. 'C4–C6 gegeben/komplettiert', "
             "'weitere 3 Zyklen nach OP abgeschlossen').\n\n"
             "unknown nur wenn explizit ausgeschlossen/verneint:\n"
             "- OP war nicht optimal (z.B. Resttumor/R1/R2/\"suboptimal\") ODER\n"
-            "- postoperative Komplementierung wurde nicht durchgeführt/abgebrochen ODER\n"
+            "- postoperative Komplettierung wurde nicht durchgeführt/abgebrochen ODER\n"
             "- es war rein adjuvant ohne neoadjuvante Vorzyklen.\n\n"
             "oder wenn unklar/fehlend (z.B. keine klare Sequenz, keine klare R0/optimal-Formulierung, "
-            "Komplementierung nicht sicher dokumentiert). Kein Raten."
+            "Komplettierung nicht sicher dokumentiert). Kein Raten."
         ),
         "producer": ["llm"],
     },
@@ -798,16 +797,16 @@ FACT_SCHEMA = {
         "definition": (
             "TRUE **nur** im neoadjuvanten Setting, **wenn beide** Bedingungen **explizit** erfüllt und dokumentiert sind: "
             "(1) Operation mit *optimalem Debulking* (z. B. 'optimales Debulking', 'R0', 'complete/complete macroscopic cytoreduction'); "
-            "(2) **Komplementierung** der Chemotherapie **nach** der OP (typisch die restlichen 3 Zyklen: 'C4–C6', 'weitere drei Zyklen', 'Komplementierung/Komplettierung abgeschlossen'), "
+            "(2) **Komplettierung** der Chemotherapie **nach** der OP (typisch die restlichen 3 Zyklen: 'C4–C6', 'weitere drei Zyklen', 'Komplettierung/Komplettierung abgeschlossen'), "
             "und insgesamt wird eine Sequenz 'C1–C3 neoadjuvant → OP → C4–C6' kenntlich. "
             "AUSWERTUNGS-SCOPE: Therapie-/OP-Dokumentation, Interims-Restaging, TB-Protokolle. "
             "FALSE, wenn: "
             "• rein **adjuvante** 6 Zyklen ohne vorherige neoadjuvante Gabe vorliegen; "
-            "• OP nicht 'optimal' ist (kein R0/keine klare Optimal-Formulierung) **oder** die postoperativen Zyklen nicht als *Komplementierung* eindeutig abgeschlossen sind; "
+            "• OP nicht 'optimal' ist (kein R0/keine klare Optimal-Formulierung) **oder** die postoperativen Zyklen nicht als *Komplettierung* eindeutig abgeschlossen sind; "
             "• nur Planung/Intention ohne Durchführung; "
             "• unklar, ob die präoperativen Zyklen tatsächlich vor der OP gegeben wurden. "
-            "Beispiele TRUE: 'nach 3× neoadjuvant OP mit R0, anschließend C4–C6 komplettiert', 'Optimales Debulking, Komplementierung abgeschlossen (C4–C6)'. "
-            "Beispiele FALSE: 'adjuvante Chemotherapie 6× abgeschlossen', 'OP mit Resttumor, weitere Chemo geplant', 'nur OP, keine Komplementierung', 'Formulierung unklar/ohne Sequenz C1–C3 → OP → C4–C6'."
+            "Beispiele TRUE: 'nach 3× neoadjuvant OP mit R0, anschließend C4–C6 komplettiert', 'Optimales Debulking, Komplettierung abgeschlossen (C4–C6)'. "
+            "Beispiele FALSE: 'adjuvante Chemotherapie 6× abgeschlossen', 'OP mit Resttumor, weitere Chemo geplant', 'nur OP, keine Komplettierung', 'Formulierung unklar/ohne Sequenz C1–C3 → OP → C4–C6'."
             "Antworte TRUE nur wenn du im Text explizite Evidenz findest. Wenn du keine Evidenz findest, antworte FALSE. Kein Raten."
         ),
     "producer": ["llm"],
@@ -844,19 +843,30 @@ FACT_SCHEMA = {
     },
     "debulking_possible": {
         "role": "output", "type": "bool3",
+        # "definition": (
+        #     "OPERABILITÄT/RESEKTABILITÄT für ein (primäres) zytoreduktives Debulking im fortgeschrittenen Setting "
+        #     "(Debulking Assessment nach cFIGO advanced). "
+        #     "Diese Variable steuert im Graphen die OP-Route: "
+        #     "TRUE → Laparotomie (Debulking-OP anstreben), "
+        #     "FALSE → Laparoskopie (kein primäres Debulking möglich; i. d. R. diagnostisch/Abklärung → neoadjuvanter Pfad), "
+        #     "UNKNOWN → Follow-up Resektabilität (weitere Abklärung nötig). "
+        #     "TRUE wenn explizit dokumentiert ist, dass Debulking/primäre Zytoreduktion möglich/operabel erscheint "
+        #     "(z. B. 'debulking möglich', 'operabel', 'R0 wahrscheinlich/erreichbar'). "
+        #     "FALSE wenn explizit dokumentiert ist, dass Debulking nicht möglich/unresectabel/inoperabel ist "
+        #     "(z. B. 'debulking nicht möglich', 'nicht operabel', 'R0 nicht erreichbar', 'unresectabel', 'palliativ', "
+        #     "'neoadjuvante Therapie statt primärem Debulking'). "
+        #     "UNKNOWN wenn keine klare Aussage zur Resektabilität vorliegt oder Angaben widersprüchlich sind. Aber eher immer true oder false als unknown wählen."
+        # ),
         "definition": (
-            "OPERABILITÄT/RESEKTABILITÄT für ein (primäres) zytoreduktives Debulking im fortgeschrittenen Setting "
-            "(Debulking Assessment nach cFIGO advanced). "
-            "Diese Variable steuert im Graphen die OP-Route: "
-            "TRUE → Laparotomie (Debulking-OP anstreben), "
-            "FALSE → Laparoskopie (kein primäres Debulking möglich; i. d. R. diagnostisch/Abklärung → neoadjuvanter Pfad), "
-            "UNKNOWN → Follow-up Resektabilität (weitere Abklärung nötig). "
-            "TRUE wenn explizit dokumentiert ist, dass Debulking/primäre Zytoreduktion möglich/operabel erscheint "
-            "(z. B. 'debulking möglich', 'operabel', 'R0 wahrscheinlich/erreichbar'). "
-            "FALSE wenn explizit dokumentiert ist, dass Debulking nicht möglich/unresectabel/inoperabel ist "
-            "(z. B. 'debulking nicht möglich', 'nicht operabel', 'R0 nicht erreichbar', 'unresectabel', 'palliativ', "
-            "'neoadjuvante Therapie statt primärem Debulking'). "
-            "UNKNOWN wenn keine klare Aussage zur Resektabilität vorliegt oder Angaben widersprüchlich sind. Aber eher immer true oder false als unknown wählen."
+            "Eingeschätzte Resektabilität/Operabilität für PRIMÄRES Debulking im fortgeschrittenen Setting "
+            "(cFIGO advanced). Ableitung darf implizit aus dem Tumorboard-Plan erfolgen (nicht nur aus "
+            "expliziten Begriffen).\n"
+            "TRUE: Debulkuling scheint erreichbar von den Fakten her."
+            "Primäre Zytoreduktion/primäre OP als Strategie (z. B. 'primäre OP/primäre Zytoreduktion', "
+            "Debulking-Laparotomie geplant, 'operabel', 'R0 wahrscheinlich/erreichbar', auch bei 'große suspekte RF' vermutlich debulking possible).\n"
+            "FALSE: Kein primäres Debulking – primär NACT/Intervall-Debulking oder nur diagnostische "
+            "Laparoskopie/Biopsie mit anschließender Systemtherapie (aus Resektabilitätsgründen oder fehlender OP-Fähigkeit).\n"
+            "UNKNOWN: Richtung unklar oder widersprüchlich; wenn möglich eher TRUE/FALSE wählen."
         ),
         "producer": ["set_debulking_possible"],
     },

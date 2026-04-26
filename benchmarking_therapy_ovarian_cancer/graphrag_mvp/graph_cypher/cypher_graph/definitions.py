@@ -16,7 +16,7 @@ definitions: Dict[str, Dict[str, str]] = {
         "OP-Entscheider": "OP-Plan festlegen (keine OP/Zystektomie/Adnektomie); liefert OP-Plan.",
         "Verlaufskontrolle": "Kontrolle bei konservativ/benignem Verlauf; entscheidet Beobachtung/Ende.",
         "Zystenausschälung": "Zystektomie durchführen; liefert Histologie (Zystektomie).",
-        "Adnektomie": "Adnexentfernung durchführen; liefert Histologie (Adnektomie).",
+        "Adnektomie": "Adnektomie durchführen; liefert Histologie (Adnektomie).",
 
         # Resektabilität/Tumorboard
         "Beurteilung Resektabilität im Tumorboard": "Interdisziplinäre Operabilitäts-Einschätzung; liefert Empfehlung zum operativen Vorgehen.",
@@ -37,10 +37,10 @@ definitions: Dict[str, Dict[str, str]] = {
         "Next Step Mapping Neoadjuvant": "Nächsten Schritt nach NACT bestimmen; plant OP/Weiterbehandlung.",
         "Reevaluation nach 3 Zyklen, CT Thorax Abdomen, CA125, Operabilität Assessment":
             "Zwischenstaging (~3 Zyklen) inkl. Operabilität; liefert Interim-Operabilität/Response.",
-        "Wechsel Therapieprotokoll & Komplementierung Chemotherapie (3x)":
-            "Protokollwechsel/Komplementierung bei NACT; dokumentiert Durchführung.",
-        "Optimales Debulking & Komplementierung Chemotherapie (3x)":
-            "OP mit optimalem Debulking + Chemo-Komplementierung; dokumentiert Vollständigkeit.",
+        "Wechsel Therapieprotokoll & Komplettierung Chemotherapie (3x)":
+            "Protokollwechsel/Komplettierung bei NACT; dokumentiert Durchführung.",
+        "Optimales Debulking & Komplettierung Chemotherapie (3x)":
+            "OP mit optimalem Debulking + Chemo-Komplettierung; dokumentiert Vollständigkeit.",
         "Wiederholung Debulking Assessment": "Operabilität nach NACT erneut prüfen; liefert aktualisierte Einschätzung.",
         "Therapie Reevaluation": "Gesamt-Review (Wirksamkeit/Toxizität/Next Step); konsolidiert Entscheidung.",
 
@@ -70,10 +70,10 @@ definitions: Dict[str, Dict[str, str]] = {
         "Route Interdisziplinäres Tumorboard (Laparoskopie)": "Weichenstellung: Tumorboard nach LSK.",
         "Route HRD/BRCA Testung (HRD Testung)": "Weichenstellung: Resolver nach sBRCA/sHRD.",
         "Route HRD/BRCA Testung (Humangenetische Beratung gBRCA1/2)": "Weichenstellung: Resolver nach gBRCA.",
-        "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Interim Restaging)":
-            "Weichenstellung: OP+Komplementierung nach Interim-Operabilität.",
-        "Route Optimales Debulking & Komplementtierung Chemotherapie (3x) (Repeated Debulking Assessment)":
-            "Weichenstellung: OP+Komplementierung nach erneutem Operabilitäts-Check.",
+        "Route Optimales Debulking & Komplettierung Chemotherapie (3x) (Interim Restaging)":
+            "Weichenstellung: OP+Komplettierung nach Interim-Operabilität.",
+        "Route Optimales Debulking & Komplettierung Chemotherapie (3x) (Repeated Debulking Assessment)":
+            "Weichenstellung: OP+Komplettierung nach erneutem Operabilitäts-Check.",
         "Route Next Step (Neoadjuvant)": "Weichenstellung: Nächster Schritt im neoadjuvanten Verlauf.",
         "Route Systemtherapie Done (Neoaduvant)": "Weichenstellung: Systemtherapie (neoadjuvant) abgeschlossen.",
         "Route Next Step (Adjuvant)": "Weichenstellung: Nächster Schritt im adjuvanten Verlauf.",
@@ -182,8 +182,8 @@ definitions: Dict[str, Dict[str, str]] = {
         "ev_neoadjuvant_therapy_done": "Nachweis: Neoadjuvante Systemtherapie erhalten .",
         "ev_adjuvant_therapy_done": "Nachweis: Adjuvante Systemtherapie erhalten .",
         "ev_interim_restaging_3_done": "Nachweis: Interim-Restaging (~3 Zyklen) erfolgt .",
-        "ev_chemo_protocol_switch_completion_done": "Nachweis: Protokollwechsel/Komplementierung (NACT) erfolgt .",
-        "ev_optimal_debulking_completion_done": "Nachweis: Optimales Debulking + Chemo-Komplementierung komplett .",
+        "ev_chemo_protocol_switch_completion_done": "Nachweis: Protokollwechsel/Komplettierung (NACT) erfolgt .",
+        "ev_optimal_debulking_completion_done": "Nachweis: Optimales Debulking + Chemo-Komplettierung komplett .",
 
         "ev_maintenance_therapy_done": "Nachweis: Erhaltungstherapie durchgeführt .",
     }

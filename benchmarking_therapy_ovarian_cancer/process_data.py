@@ -14,7 +14,7 @@ from benchmarking_therapy_ovarian_cancer.prompt_list import diagnosed_prompt_tem
 EXCLUDE_COLS = {
     config.gold_standard_col,
     "oncology_status", "oncology_rationale", "oncology_evidence_spans",
-    "Patientin-ID", "Referenz Goldstandard", "Kommentar"
+    "Patientin-ID", "Referenz Goldstandard", "Kommentar", "Status", "Original Tumorboard-Empfehlung"
 }
 
 def generate_patient_info(patient: pd.Series, exclude_cols: list[str]) -> str:
@@ -44,9 +44,9 @@ def generate_prompt(
     status = str(patient_info.get("oncology_status", "")).strip().lower()
     patient_block = generate_patient_info(patient_info, exclude_cols)
     if strategy == config.LlmStrategy.LONG_CTX:
-        template = long_context_diagnosed_prompt_template if status == "Diagnose" else long_context_suspected_prompt_template
+        template = long_context_diagnosed_prompt_template if status == "diagnose" else long_context_suspected_prompt_template
     else:
-        template = diagnosed_prompt_template if status == "Diagnose" else suspected_prompt_template
+        template = diagnosed_prompt_template if status == "diagnose" else suspected_prompt_template
 
     prompt_vars = {"patient_info": patient_block}
     if "{context_block}" in template:

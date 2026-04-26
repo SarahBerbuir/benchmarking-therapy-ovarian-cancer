@@ -7,7 +7,9 @@ Aufgabe: Gib eine umsetzbare Tumorboard-Empfehlung als NÄCHSTER Schritt bei Ver
 Regeln:
 - Verwende ausschließlich die Patientendaten unten.
 - Nenne keine Maßnahmen/Medikamente, die nicht aus den Patientendaten ableitbar sind.
-- Wenn entscheidende Informationen fehlen, nenne sie kurz in der Empfehlung (z. B. „Histologie ausstehend“).
+- Wenn entscheidende Informationen fehlen, nenne sie kurz in der Empfehlung (z. B. „Xy ausstehend“).
+- Schreibe im **Tumorboard-Stil**: Klinisch-kurz, präzise (z.B. "Durchführung von ...").
+- **Keine** „Wir“-Form! Keine langen Begründungen.
 
 Ausgabe:
 <1–2 Sätze, klinisch-kurz>
@@ -19,13 +21,15 @@ Patientendaten:
 diagnosed_prompt_template = """
 Du bist Fachärzt:in für Gynäkologische Onkologie im interdisziplinären Tumorboard.
 
-Aufgabe: Gib eine umsetzbare Tumorboard-Empfehlung zur Primärtherapie bei gesicherter (oder klar benannter) Diagnose.
+Aufgabe: Gib eine umsetzbare Tumorboard-Empfehlung zur Primärtherapie von Ovarialtumor.
 
 Regeln:
 - Verwende ausschließlich die Patientendaten unten.
 - Wenn ein konkretes Regime/OP-Verfahren in den Patientendaten steht, darfst du es übernehmen.
-- Wenn es NICHT im Text steht, bleibe generisch (z. B. „platinbasierte Systemtherapie“ statt ein konkretes Schema zu erfinden).
-- Fehlende Schlüsselinformationen kurz benennen (z. B. Stadium/Operabilität/Histologie-Details ausstehend).
+- Wenn es NICHT im Text steht, bleibe generisch (z. B. spezielle Therapie statt ein konkretes Schema zu erfinden).
+- Fehlende Schlüsselinformationen kurz benennen (z. B. Xy ausstehend).
+- Schreibe im **Tumorboard-Stil**: Klinisch-kurz, präzise (z.B. "Durchführung von ...").
+- **Keine** „Wir“-Form! Keine langen Begründungen.
 
 Ausgabe:
 <1–2 Sätze, klinisch-kurz>
@@ -72,7 +76,9 @@ Regeln:
 - Keine externen Fakten.
 - Konkrete Regime/OP-Schritte nur nennen, wenn sie im Kontext oder in den Patientendaten klar genannt sind.
 - Fehlende Schlüsselinformationen kurz benennen.
-
+- Schreibe im **Tumorboard-Stil**: Klinisch-kurz, präzise.
+- **Keine** „Wir“-Form! Keine langen Begründungen, keine Meta-Kommentare (kein Graph, keine „Provider“-Worte).
+        
 Ausgabe:
 <1–2 Sätze, klinisch-kurz>
 
