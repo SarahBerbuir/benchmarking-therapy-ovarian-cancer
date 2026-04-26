@@ -61,7 +61,7 @@ CALL (names) {
   MERGE (stepRouteBrcaHrdResolverHRDTesting:Step:Evaluator:Routing {name:names.routeBrcaHrdResolverHRDTesting})
     ON CREATE SET stepRouteBrcaHrdResolverHRDTesting.kind="Evaluator", stepRouteBrcaHrdResolverHRDTesting.logic="set_route_flag"
 
-  MERGE (stepBrcaHrdResolver:Step:Evaluator {name:names.hrcBrcaResolver})
+  MERGE (stepBrcaHrdResolver:Step:Evaluator {name:names.hrdBrcaResolver})
     ON CREATE SET stepBrcaHrdResolver.kind="Evaluator", stepBrcaHrdResolver.logic="set_hrd_brca_status"
 
   MERGE (stepParallelJoin:Step:Evaluator:Routing {name:names.parallelJoin})

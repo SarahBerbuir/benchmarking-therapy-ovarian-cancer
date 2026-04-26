@@ -44,7 +44,7 @@ CALL (names){
   MATCH (stepTumorHRDTesting:Step {name:names.tumorHRDTesting})
   MATCH (stepRouteBrcaHrdResolverHRDTesting:Step {name:names.routeBrcaHrdResolverHRDTesting})
 
-  MATCH (stepBrcaHrdResolver:Step {name:names.hrcBrcaResolver})
+  MATCH (stepBrcaHrdResolver:Step {name:names.hrdBrcaResolver})
   MATCH (stepParallelJoin:Step {name:names.parallelJoin})
 
   // Neoadjuvant
@@ -363,11 +363,11 @@ MERGE (stepRouteBrcaHrdResolverHRDTesting)-[:NEEDS_FACT]->(fksBRCA)
 MERGE (stepRouteBrcaHrdResolverHRDTesting)-[:NEEDS_FACT]->(fksHRD)
 
 WITH s
-MERGE (fkRouteHrcBrcaResolver:FactKey {key:"route_hrd_brca_resolver"})
-WITH s, fkRouteHrcBrcaResolver, s.brcaHrdResolver AS stepBrcaHrdResolver, s.routeBrcaHrdResolverHRDTesting AS stepRouteBrcaHrdResolverHRDTesting, s.routeBrcaHrdResolverGermline AS stepRouteBrcaHrdResolverGermline
-MERGE (stepRouteBrcaHrdResolverGermline)-[:PROVIDES_FACT]->(fkRouteHrcBrcaResolver)
-MERGE (stepRouteBrcaHrdResolverHRDTesting)-[:PROVIDES_FACT]->(fkRouteHrcBrcaResolver)
-MERGE (stepBrcaHrdResolver)-[:REQUIRES_FACT {value:true}]->(fkRouteHrcBrcaResolver)
+MERGE (fkRouteHrdBrcaResolver:FactKey {key:"route_hrd_brca_resolver"})
+WITH s, fkRouteHrdBrcaResolver, s.brcaHrdResolver AS stepBrcaHrdResolver, s.routeBrcaHrdResolverHRDTesting AS stepRouteBrcaHrdResolverHRDTesting, s.routeBrcaHrdResolverGermline AS stepRouteBrcaHrdResolverGermline
+MERGE (stepRouteBrcaHrdResolverGermline)-[:PROVIDES_FACT]->(fkRouteHrdBrcaResolver)
+MERGE (stepRouteBrcaHrdResolverHRDTesting)-[:PROVIDES_FACT]->(fkRouteHrdBrcaResolver)
+MERGE (stepBrcaHrdResolver)-[:REQUIRES_FACT {value:true}]->(fkRouteHrdBrcaResolver)
 
 
 WITH s
